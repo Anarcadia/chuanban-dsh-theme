@@ -38,7 +38,7 @@ dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-theme/rel
   ```
 - **连同纯净写作协作预设（[`chuanban-dsh-writingset`](https://github.com/Anarcadia/chuanban-dsh-writingset)）一起装**（一条命令配齐「纯净写作提示词内核 + 暖纸阅读皮肤」）：
   ```sh
-  dsh plugin --profile writing add https://github.com/Anarcadia/chuanban-dsh-writingset/releases/latest/download/chuanban-dsh-writingset.tgz https://github.com/Anarcadia/chuanban-dsh-theme/releases/latest/download/chuanban-dsh-theme.tgz
+  dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-writingset/releases/latest/download/chuanban-dsh-writingset.tgz https://github.com/Anarcadia/chuanban-dsh-theme/releases/latest/download/chuanban-dsh-theme.tgz
   ```
 
 安装后重启 DSH 桌面端（或在插件页刷新）即刻生效；想要临时换回官方原皮，只需在 **插件** 页关闭 `chuanban-dsh-theme` 开关即可**热切换恢复（HMR，无需重启）**。
