@@ -43,6 +43,13 @@ dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-theme/rel
 
 安装后重启 DSH 桌面端（或在插件页刷新）即刻生效；想要临时换回官方原皮，只需在 **插件** 页关闭 `chuanban-dsh-theme` 开关即可**热切换恢复（HMR，无需重启）**。
 
+> [!IMPORTANT]
+> **⚠️ 完整效果需要安装字体包（免费）**：本皮肤只声明 CSS 字体栈，不内嵌字体文件。**未安装字体时暖纸配色与布局照常生效**，仅中西文字体会回退为系统默认。要获得设计稿级的完整排版（更纱黑体等宽 + Anthropic 风格字栈），请先安装字体包：
+>
+> **[📦 点此下载字体包（Google Drive 公开分享）](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC?usp=drive_link)**
+>
+> 下载后安装字体（macOS 双击 .ttc / .ttf 导入字体册，Windows 右键安装），重启 DSH 即完整生效。
+
 ---
 
 ## 视觉与排版设计细节
@@ -60,7 +67,7 @@ dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-theme/rel
 - **代码与终端层（`--ds-font-family-code`）**：`'Sarasa Mono Slab SC', '等距更纱黑体 Slab SC', 'SF Mono', 'JetBrains Mono', ...` —— 严格 1:2 中西文等宽对齐。
 - **全局字号同步**：将侧栏与会话目录树接入官方 `--dsh-content-font-delta` 字号轴，调节字号时侧栏与正文同步缩放。
 
-> **字体前提说明**：插件仅声明 CSS 字体栈（不包含字体体积）。为获得最佳排版效果，建议本机已安装 **更纱黑体（`Sarasa Mono Slab SC` / `Sarasa-SuperTTC.ttc`）** 及 **Anthropic Sans / Serif Web** 字体；若未安装，系统将自动平滑回退至 macOS 原生 `PingFang SC`、`SF Mono` 等系统字体，不影响任何配色与布局功能。
+> **字体前提说明**：插件仅声明 CSS 字体栈（不包含字体体积）。为获得最佳排版效果，建议安装上方 **[📦 字体包（Google Drive）](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC?usp=drive_link)**，即 **更纱黑体（`Sarasa Mono Slab SC` / `Sarasa-SuperTTC.ttc`）** 及 **Anthropic Sans / Serif Web** 字体；若未安装，系统将自动平滑回退至 macOS 原生 `PingFang SC`、`SF Mono` 等系统字体，不影响任何配色与布局功能。
 
 ---
 
