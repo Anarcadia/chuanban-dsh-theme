@@ -1,0 +1,51 @@
+{
+  "name": "chuanban-dsh-theme",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "DSH 暖纸外观皮肤插件：Claude Desktop 暖白纸配色 + 更纱黑体两层字体（D143 absoulutely-chuanban 的 DSH 原生插件版，D148 Phase 1）",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "default": "./dist/client.js"
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-theme"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node ./scripts/build-client.mjs",
+    "test": "node ./tests/verify.mjs",
+    "prepublishOnly": "node ./scripts/build-client.mjs && node ./tests/verify.mjs",
+    "install-desktop": "sh ./scripts/install-desktop.sh"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "theme",
+    "skin",
+    "claude-desktop"
+  ],
+  "author": "船板",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Anarcadia/chuanban-dsh-theme.git"
+  },
+  "files": [
+    "dist",
+    "cordis.patch.yml",
+    "src"
+  ]
+}

@@ -1,0 +1,8 @@
+# chuanban-dsh-theme 声明式补丁（D148 Phase 1）
+# 挂载皮肤插件。host 半部为薄壳；全部皮肤逻辑在客户端半部（./client）：
+#   ctx.theme.overrideTokens('chuanban-skin', ...) 暖纸覆盖层 + 字体 token + 全局微调样式。
+# 启停：DSH 插件页开关本插件行（HMR 热生效），禁用即恢复官方原皮。
+
+- insert:
+    - id: chuanban-theme
+      name: 'chuanban-dsh-theme'
