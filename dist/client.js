@@ -31,6 +31,15 @@ window.__ModuleLoader__.load({
 		// 值对辅助：light/dark 同值（固定暖纸浅色，D148 立项决策）
 		var pair = function (v) { return { light: v, dark: v }; };
 
+		// 2026-11-13 v0.1.1（DSH 0.2.2-rc.3 漂移修复，D148 §六）：
+		//   - 删 7 个已无消费者的 token（tip / sidebar-nav-item-hover / markdown-placeholder /
+		//     button-ghost-active-hover / brand-text / brand-primary-invert / bg-multi-select）；
+		//   - 补 0.2.2 新面暖色映射：bg-layer-4 / bg-skeleton / card 组 / bg-document-preview /
+		//     separator / turn-trigger-bg-hover / sidebar wash-tint-glass 组（wash 层为旧 darwin
+		//     紫灰渐变的新形态，token 置 transparent + GLOBAL_CSS !important 双保险中和）；
+		//   - GLOBAL_CSS 四组 asar 锚点重提取：gKv1-q→XNZzAa、yhfFVG→JZLxKW、_3WPZCG→kB3qhq、
+		//     jJkEga→JoiKIa（会话树行自 ui-session 迁至 ui-workspace）；_sidebarCol 后缀锚点
+		//     仍命中（新前缀 PIRFFq），保留。
 		var TOKENS = {
 		  // 字体
 		  '--dsw-font-family': pair(FONT_UI),
@@ -41,9 +50,16 @@ window.__ModuleLoader__.load({
 		  '--dsw-alias-bg-layer-1': pair('#FBF9F5'),
 		  '--dsw-alias-bg-layer-2': pair('#F7F4EE'),
 		  '--dsw-alias-bg-layer-3': pair('#F4EFE7'),
+		  '--dsw-alias-bg-layer-4': pair('#F1EAE0'),
 		  '--dsw-alias-bg-overlay': pair('#FDFBF7'),
 		  '--dsw-alias-bg-module-platform': pair('#F1EAE0'),
-		  '--dsw-alias-bg-multi-select': pair('#F1EAE0'),
+		  '--dsw-alias-bg-skeleton': pair('rgba(96, 76, 55, 0.05)'),
+		  '--dsw-alias-bg-document-preview': pair('#F1EAE0'),
+
+		  // 卡片面（0.2.2 新面：官方 neutral-50/100/半透明白 → 暖纸同位面）
+		  '--dsw-alias-card-fill': pair('#F7F4EE'),
+		  '--dsw-alias-card-fill-hover': pair('#F1EAE0'),
+		  '--dsw-alias-card-tile-fill': pair('rgba(253, 251, 247, 0.5)'),
 
 		  // 边框（实色暖灰梯度再加深一档——「实」的框线是 Antigravity/D143 核心思路；
 		  // 官方 CSS 已用 .5px 发丝线宽，颜色实化后即为 Claude 式清晰锐利细线）
@@ -51,11 +67,10 @@ window.__ModuleLoader__.load({
 		  '--dsw-alias-border-l2': pair('#DAD5CA'),
 		  '--dsw-alias-border-l3': pair('#D0C9BB'),
 		  '--dsw-alias-border-l4': pair('#C6BFAE'),
+		  '--dsw-alias-separator-primary': pair('#E4E0D7'),
 
 		  // 品牌与强调（Anthropic 陶土）
 		  '--dsw-alias-brand-primary': pair('#D97757'),
-		  '--dsw-alias-brand-primary-invert': pair('#FBF9F5'),
-		  '--dsw-alias-brand-text': pair('#C4633F'),
 		  '--dsw-alias-button-primary-fill': pair('#D97757'),
 		  '--dsw-alias-button-primary-hover': pair('#C66A4C'),
 		  '--dsw-alias-button-info-fill': pair('#D97757'),
@@ -87,7 +102,6 @@ window.__ModuleLoader__.load({
 		  '--dsw-alias-button-floating-fill': pair('#FBF9F5'),
 		  '--dsw-alias-button-floating-hover': pair('#F3E9DE'),
 		  '--dsw-alias-button-ghost-active-fill': pair('#F1EAE0'),
-		  '--dsw-alias-button-ghost-active-hover': pair('#EFE6D9'),
 		  '--dsw-alias-button-ghost-active-border': pair('#D5C8B5'),
 		  '--dsw-alias-button-contrast-fill': pair('#2C2B29'),
 
@@ -97,8 +111,8 @@ window.__ModuleLoader__.load({
 		  '--dsw-alias-markdown-inline-code': pair('#F1EAE0'),
 		  '--dsw-alias-markdown-citation': pair('#E6D9C8'),
 		  '--dsw-alias-markdown-tag': pair('#E6D9C8'),
-		  '--dsw-alias-markdown-placeholder': pair('#C9BFAF'),
 		  '--dsw-alias-turn-trigger-bg': pair('#F1EAE0'),
+		  '--dsw-alias-turn-trigger-bg-hover': pair('rgba(180, 120, 90, 0.07)'),
 
 		  // 滚动条（暖纸纸色系）
 		  '--dsw-alias-scrollbar-bg-l1': pair('#E3D9CB'),
@@ -110,8 +124,18 @@ window.__ModuleLoader__.load({
 		  // darwin 平台特化着色层在 GLOBAL_CSS 中另行中和，见下）
 		  '--dsw-specific-sidebar-fill': pair('#F1EEE7'),
 		  '--dsw-specific-sidebar-nav-item-active': pair('#E9E4DA'),
-		  '--dsw-specific-sidebar-nav-item-hover': pair('#EDE9E0'),
 		  '--dsw-specific-sidebar-nav-item-active-accent': pair('#F3DDD3'),
+		  // 0.2.2 wash/tint/glass 层（darwin 特化渐变的新形态，官方叠紫灰 #8f89b8 / 蓝 #7a9bf0）：
+		  // token 全部置 transparent / 暖纸半透明，令 sidebar-fill 独占侧栏着色
+		  '--dsw-specific-sidebar-wash-top': pair('transparent'),
+		  '--dsw-specific-sidebar-wash-top-clear': pair('transparent'),
+		  '--dsw-specific-sidebar-wash-bottom': pair('transparent'),
+		  '--dsw-specific-sidebar-wash-bottom-clear': pair('transparent'),
+		  '--dsw-specific-sidebar-tint': pair('transparent'),
+		  '--dsw-specific-sidebar-glass-fill': pair('rgba(241, 238, 231, 0.85)'),
+		  '--dsw-specific-sidebar-glass-hover': pair('rgba(241, 238, 231, 0.55)'),
+		  '--dsw-specific-sidebar-glass-collapsed-fill': pair('rgba(241, 238, 231, 0.85)'),
+		  '--dsw-specific-sidebar-glass-collapsed-hover': pair('rgba(233, 228, 218, 0.6)'),
 
 		  // 气泡与输入面（2026-10-17 三改：输入卡片改纯白 #FFFFFF，靠暖光阴影浮于略深主区上——
 		  // 借鉴 ZCode UI「白卡片 + 阴影 + 偏深主界面」的对比方式，替代先前「随左栏同色」方案）
@@ -119,7 +143,6 @@ window.__ModuleLoader__.load({
 		  '--dsw-specific-bubble-highlight': pair('#F3E0D4'),
 		  '--dsw-specific-input-major': pair('#FFFFFF'),
 		  '--dsw-specific-selector': pair('#F1EAE0'),
-		  '--dsw-specific-tip': pair('#F1EAE0'),
 
 		  // 菜单与设置卡
 		  '--dsw-specific-menu': pair('#FDFBF7'),
@@ -133,36 +156,38 @@ window.__ModuleLoader__.load({
 		  '::selection { background: rgba(217, 119, 87, 0.25); }',
 		  // 微负字距（-0.01em）：西文词组凝聚成致密墨块带，强化「扎实沉稳」质感（对中文影响轻微）
 		  'body { -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }',
-		  // darwin 平台特化层中和：桌面端 CSS 对侧栏列叠了
-		  // linear-gradient(#8f89b8 紫灰) + color-mix(sidebar-fill 混 3% #7a9bf0 蓝, 40% 透明)，
-		  // 会把任何 sidebar-fill 压暗偏灰紫（#F1E8DC 实渲成 #DBD4D1）。
-		  // 用稳定锚点覆盖回 token 目标色；sidebarCol 为 CSS Modules local 名后缀
-		  // （hash 前缀构建间变化，local 名稳定），官方改名时本规则失效、无害回落平台层。
+		  // darwin 平台特化层中和：桌面端 CSS 对侧栏列叠了 wash 渐变（#8f89b8 紫灰 /
+		  // #7a9bf0 蓝，0.2.2 起改由 sidebar-wash-*/sidebar-tint token 驱动，token 已置
+		  // transparent）+ 本规则 !important 双保险覆盖回暖纸目标色；sidebarCol 为 CSS
+		  // Modules local 名后缀（hash 前缀构建间变化，local 名稳定——0.2.2-rc.3 实测仍命中），
+		  // 官方改名时本规则失效、无害回落平台层。
 		  '[data-platform="darwin"] [class$="_sidebarCol"] { background: #F1EEE7 !important; }',
 		  // 正文阅读层：Anthropic Serif 西文 + 苹方中文（对齐 Claude Desktop 原生观感）。
-		  // 锚点为桌面端 app.asar（2026-09-29 build）提取的 CSS Modules 确切 class
-		  // （gKv1-q = AssistantMarkdown）；DSH 升级后 hash 变化则规则失配，
+		  // 锚点为桌面端 app.asar 提取的 CSS Modules 确切 class（0.2.2-rc.3：XNZzAa =
+		  // AssistantMarkdown，ui-chat 插件运行时 CSS）；DSH 再升级后 hash 变化则规则失配，
 		  // 正文无害回落 UI 层字体栈（Anthropic Sans + 苹方）。
-		  '.gKv1-q_root, .gKv1-q_body { font-family: ' + FONT_READING + ' !important; }',
-		  // 输入卡片（asar 锚点 yhfFVG_card，排除 cardWorkspaceTrigger 虚线选区态）：
-		  // 纯白卡片（input-major token）浮于略深主区上的对比由本组阴影承担：
-		  // 1) 边线 1/3 加粗加深（0.5px→0.67px，stroke #B3AA9B）；
+		  '.XNZzAa_root, .XNZzAa_body { font-family: ' + FONT_READING + ' !important; }',
+		  // 输入卡片（asar 锚点 0.2.2-rc.3：JZLxKW_card，ui-conversation，排除
+		  // cardWorkspaceTrigger 虚线选区态）：纯白卡片（input-major token）浮于略深主区
+		  // 上的对比由本组阴影承担：
+		  // 1) 边线 1/3 加粗加深（0.5px→0.67px，stroke #A89F8E）；
 		  // 2) 初始即有细微外散暖晕（双层低透明暖褐扩散，替代官方中性黑柔光）；
 		  // 3) 聚焦（光标进入）时暖晕以快速动效（0.18s 官方 ease）大幅增强：
 		  //    更深边线 + 双层加大加深的暖光外散 + 陶土色 3px 光环。
 		  // 纯 CSS focus-within，零 JS、零轮询。
-		  '.yhfFVG_card:not(.yhfFVG_cardWorkspaceTrigger) { --dsw-elevation-stroke-color: #A89F8E !important; box-shadow: 0 0 0 0.67px var(--dsw-elevation-stroke-color), 0 2px 10px 0 rgba(96, 76, 55, 0.05), 0 8px 28px 0 rgba(96, 76, 55, 0.06) !important; transition: box-shadow 0.18s var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)) !important; }',
-		  '.yhfFVG_card:not(.yhfFVG_cardWorkspaceTrigger):focus-within { box-shadow: 0 0 0 0.67px #978D7A, 0 4px 18px 0 rgba(180, 118, 76, 0.10), 0 12px 44px 0 rgba(180, 118, 76, 0.16), 0 0 0 3px rgba(217, 119, 87, 0.10) !important; }',
-		  // 侧栏 + 会话列表字号跟随（asar 锚点 _3WPZCG_root / _3WPZCG_newSession）：
+		  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger) { --dsw-elevation-stroke-color: #A89F8E !important; box-shadow: 0 0 0 0.67px var(--dsw-elevation-stroke-color), 0 2px 10px 0 rgba(96, 76, 55, 0.05), 0 8px 28px 0 rgba(96, 76, 55, 0.06) !important; transition: box-shadow 0.18s var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)) !important; }',
+		  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger):focus-within { box-shadow: 0 0 0 0.67px #978D7A, 0 4px 18px 0 rgba(180, 118, 76, 0.10), 0 12px 44px 0 rgba(180, 118, 76, 0.16), 0 0 0 3px rgba(217, 119, 87, 0.10) !important; }',
+		  // 侧栏 + 会话列表字号跟随（asar 锚点 0.2.2-rc.3：kB3qhq = SidebarRoot，ui-sidebar）：
 		  // 官方字号轴只驱动主区 delta 体系，侧栏根与「新建会话」写死 14px；接入官方
 		  // delta 惯用法（默认字号时 delta=0 观感与原生一致，调大时全体同步）。
 		  // 整页布局级缩放不走 CSS zoom（弹层库 rect 视觉坐标与 style.top 布局单位
 		  // 错乘，结构性错位），改由 --force-device-scale-factor 启动开关承担（见 README）。
-		  '._3WPZCG_root, ._3WPZCG_newSession { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; }',
-		  // 会话目录树行（asar 锚点 jJkEga = ui-session Rows 组件）：标题类显式写死 14px
-		  // 覆盖继承，故侧栏根跟随对它无效；同样接入官方 delta。小字（时间戳等 12/13px）
-		  // 按官方缩放契约「Small typography keeps fixed sizes」保持固定。
-		  '.jJkEga_title, .jJkEga_renameInput, .jJkEga_searchResultTitle, .jJkEga_hoverTitle { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; }'
+		  '.kB3qhq_root, .kB3qhq_newSession { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; }',
+		  // 会话目录树行（asar 锚点 0.2.2-rc.3：JoiKIa，自 ui-session 迁至 ui-workspace）：
+		  // 标题类显式写死 14px 覆盖继承，故侧栏根跟随对它无效；同样接入官方 delta。
+		  // 小字（时间戳等 12/13px）按官方缩放契约「Small typography keeps fixed sizes」
+		  // 保持固定。
+		  '.JoiKIa_title, .JoiKIa_renameInput, .JoiKIa_searchResultTitle, .JoiKIa_hoverTitle { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; }'
 		].join('\n');
 
 		var PLUGIN_ID = 'chuanban-dsh-theme';

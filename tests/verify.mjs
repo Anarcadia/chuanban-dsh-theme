@@ -63,7 +63,7 @@ const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 ok('package.json dsh.client（platform=web, inject ui-theme）+ exports ./client',
   pkg.dsh?.client?.platform === 'web' && pkg.dsh?.client?.inject?.includes('@deepseek-ai/dsh-client-ui-theme') && !!pkg.exports?.['./client']);
 ok('darwin 平台特化层中和规则（sidebarCol 后缀锚点）存在', skinSrc.includes('[data-platform="darwin"] [class$="_sidebarCol"]'));
-ok('正文阅读层 Anthropic Serif 规则（asar 锚点 gKv1-q）存在', skinSrc.includes('.gKv1-q_root') && skinSrc.includes('Anthropic Serif Web'));
+ok('正文阅读层 Anthropic Serif 规则（0.2.2-rc.3 asar 锚点 XNZzAa）存在', skinSrc.includes('.XNZzAa_root') && skinSrc.includes('Anthropic Serif Web'));
 ok('中文回退苹方：UI/正文栈含 PingFang SC 且不含更纱', tokens['--dsw-font-family'].light.includes('PingFang SC') && !tokens['--dsw-font-family'].light.includes('Sarasa UI'));
 ok('质感参数：全局微负字距（侧栏字重已恢复官方默认 400）', skinSrc.includes('letter-spacing: -0.01em') && !skinSrc.includes('font-weight: 450'));
 const borderTokens = ['--dsw-alias-border-l1', '--dsw-alias-border-l2', '--dsw-alias-border-l3', '--dsw-alias-border-l4', '--dsw-alias-settings-card-stroke'];
@@ -71,8 +71,10 @@ ok('框线实色化（边框 token 无半透明 rgba）', borderTokens.every((k)
 ok('功能性小字深炭段（secondary #38342C / tertiary #3F3B33，贴近主文字）', tokens['--dsw-alias-label-secondary'].light === '#38342C' && tokens['--dsw-alias-label-tertiary'].light === '#3F3B33');
 ok('输入卡片纯白（input-major = #FFFFFF，靠阴影浮于偏深主区）', tokens['--dsw-specific-input-major'].light === '#FFFFFF');
 ok('主区略偏深承托白卡（bg-base = #FBF9F5，整体淡化一档后）', tokens['--dsw-alias-bg-base'].light === '#FBF9F5');
-ok('输入框线 1/3 加粗 + 加深（0.67px stroke #A89F8E 锚点规则）', skinSrc.includes('0 0 0 0.67px') && skinSrc.includes('#A89F8E'));
-ok('字号跟随（官方 delta 惯用法）：侧栏根 + 会话树行 Rows 锚点', skinSrc.includes('_3WPZCG_root') && skinSrc.includes('.jJkEga_title'));
+ok('输入框线 1/3 加粗 + 加深（0.67px stroke #A89F8E 锚点规则，JZLxKW）', skinSrc.includes('0 0 0 0.67px') && skinSrc.includes('#A89F8E') && skinSrc.includes('.JZLxKW_card'));
+ok('字号跟随（官方 delta 惯用法）：侧栏根 kB3qhq + 会话树行 JoiKIa 锚点', skinSrc.includes('.kB3qhq_root') && skinSrc.includes('.JoiKIa_title'));
+ok('v0.1.1 漂移修复：wash/tint 层 token 中和 + 新纸面 token（bg-layer-4/card 组）', tokens['--dsw-specific-sidebar-wash-top'].light === 'transparent' && tokens['--dsw-alias-bg-layer-4'].light === '#F1EAE0' && tokens['--dsw-alias-card-fill'].light === '#F7F4EE');
+ok('v0.1.1 已删 0.2.2 无消费者 token（tip / markdown-placeholder / brand-text 等）', !('--dsw-specific-tip' in tokens) && !('--dsw-alias-markdown-placeholder' in tokens) && !('--dsw-alias-brand-text' in tokens));
 ok('CSS zoom 方案已撤（弹层结构性错位，全局缩放交启动开关）', !skinSrc.includes('style.zoom'));
 ok('输入框初始暖晕 + 聚焦增强动效（focus-within + 0.18s transition）', skinSrc.includes(':focus-within') && skinSrc.includes('transition: box-shadow 0.18s'));
 
