@@ -78,14 +78,17 @@ ok('v0.1.1 已删 0.2.2 无消费者 token（tip / markdown-placeholder / brand-
 ok('CSS zoom 方案已撤（弹层结构性错位，全局缩放交启动开关）', !skinSrc.includes('style.zoom'));
 ok('输入框初始暖晕 + 聚焦增强动效（focus-within + 0.18s transition）', skinSrc.includes(':focus-within') && skinSrc.includes('transition: box-shadow 0.18s'));
 
-console.log('[5] 方案一：左右纵横双向等比例同步缩放（--cb-scale + layout store 联动）');
-ok('GLOBAL_CSS 包含纵向参数化规则（JoiKIa_sessionRow / kB3qhq_panelRow / _77Pn0W_trigger / Kjh-qa_root）',
-  skinSrc.includes('.JoiKIa_projectRow, .JoiKIa_sessionRow { height: calc(32px * var(--cb-scale, 1))') &&
-  skinSrc.includes('.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelRow') &&
-  skinSrc.includes('._77Pn0W_trigger:not(._77Pn0W_rail) { height: calc(42px * var(--cb-scale, 1))') &&
-  skinSrc.includes('.Kjh-qa_root:not(.Kjh-qa_rail) { --workspace-toolbar-height: calc(36px * var(--cb-scale, 1))'));
-ok('GLOBAL_CSS 包含右侧正文列宽同步缩放规则（.kiGsTW_body / --dsh-chat-content-width）',
-  skinSrc.includes('.kiGsTW_body { --dsh-chat-content-width: var(--dsh-chat-user-width'));
+console.log('[5] 方案一：左右纵横双向等比例同步缩放（--cb-scale + 跨平台免哈希选择器 + layout store 联动）');
+ok('GLOBAL_CSS 包含跨平台通用 CSS Modules 选择器 c(name) 与纵向参数化规则（sessionRow / panelRow / trigger / data-row-key / data-windows-titlebar）',
+  skinSrc.includes('function c(name)') &&
+  skinSrc.includes('[data-row-key^="session:"]') &&
+  skinSrc.includes('[data-windows-titlebar]') &&
+  skinSrc.includes('height: calc(32px * var(--cb-scale, 1))') &&
+  skinSrc.includes('height: calc(42px * var(--cb-scale, 1))') &&
+  skinSrc.includes('font-size: calc(14px * var(--cb-scale, 1))') &&
+  skinSrc.includes('--workspace-toolbar-height: calc(36px * var(--cb-scale, 1))'));
+ok('GLOBAL_CSS 包含右侧正文列宽同步缩放规则（.kiGsTW_body / [data-conversation-content] / --dsh-chat-content-width）',
+  skinSrc.includes('.kiGsTW_body') && skinSrc.includes('[data-conversation-content]') && skinSrc.includes('--dsh-chat-content-width: var(--dsh-chat-user-width'));
 
 // 模拟 apply(ctx) 运行态：验证 --cb-scale 初始化、theme/change 联动与 setSidebar 按比例调用、以及 disposer 清理
 {
@@ -220,7 +223,7 @@ ok('GLOBAL_CSS 含 [data-expandable] 工具折叠行 hover/active 变色', skinS
 ok('GLOBAL_CSS 含 [class*="_bubble_"]:not([role="tooltip"]) 排除 Tooltip 气泡边线', skinSrc.includes('[class*="_bubble_"]:not([role="tooltip"])'));
 ok('零 setInterval 轮询运行时开销（流式监听采用单个 rAF 节流 MutationObserver）', !skinSrc.includes('setInterval') && skinSrc.includes('requestAnimationFrame'));
 
-console.log('[7] Phase C：流式状态栏 Claude 橙色系、鲸鱼慢速大幅摇摆与流式渐变浮现（Antigravity 级双层单调阻尼引擎）');
+console.log('[7] Phase C：流式状态栏 Claude 橙色系、鲸鱼慢速大幅摇摆与「大片逆向渐隐 + 60fps 柔顺下拉」流式引擎');
 ok('--dsw-alias-label-deep-diving = #CE6846', tokens['--dsw-alias-label-deep-diving']?.light === '#CE6846');
 ok('--dsw-alias-label-deep-diving-shimmer = #F4B293', tokens['--dsw-alias-label-deep-diving-shimmer']?.light === '#F4B293');
 ok('--dsw-alias-label-shimmer = rgba(217, 119, 87, 0.42)', tokens['--dsw-alias-label-shimmer']?.light === 'rgba(217, 119, 87, 0.42)');
@@ -230,12 +233,10 @@ ok('GLOBAL_CSS 含鲸鱼矢量大幅慢速摆动（cb-whale-slow-swing 3.2s / 43
   skinSrc.includes('cb-whale-slow-swing') && skinSrc.includes('3.2s') && skinSrc.includes('43% 86%') && skinSrc.includes('rotate(-22deg)'));
 ok('GLOBAL_CSS 含关闭 APNG 动画与解容器裁切规则（display: none / overflow: visible）',
   skinSrc.includes('runningWhaleAnimated') && skinSrc.includes('overflow: visible'));
-ok('GLOBAL_CSS 含容器级纵向渐变幕布规则（[data-cb-stream-root] / --cb-stream-y-solid / --cb-stream-y-end）',
-  skinSrc.includes('[data-cb-stream-root]') && skinSrc.includes('--cb-stream-y-solid') && skinSrc.includes('--cb-stream-y-end'));
-ok('GLOBAL_CSS 含尾行单调递增横向渐变遮罩（[data-cb-stream-tail="horizontal"] / --cb-stream-x-solid / --cb-stream-x-end）',
-  skinSrc.includes('[data-cb-stream-tail="horizontal"]') && skinSrc.includes('--cb-stream-x-solid') && skinSrc.includes('--cb-stream-x-end'));
-ok('apply(ctx) 包含单调 60fps 阻尼插值流式 effect（streaming gradient reveal + createTreeWalker 规避折叠空矩形 + 零 DOM 篡改）',
-  skinSrc.includes('streaming gradient reveal') && skinSrc.includes('createTreeWalker') && skinSrc.includes('requestAnimationFrame') && skinSrc.includes('MutationObserver'));
+ok('GLOBAL_CSS 含大片多阶 S 曲线纵向逆向渐隐幕布（[data-cb-stream-root] / 0.86 / 0.54 / 0.20）与块级下浮动画（cb-stream-sheet-in）',
+  skinSrc.includes('[data-cb-stream-root]') && skinSrc.includes('--cb-stream-y-solid') && skinSrc.includes('--cb-stream-y-end') && skinSrc.includes('rgba(0, 0, 0, 0.86)') && skinSrc.includes('cb-stream-sheet-in'));
+ok('apply(ctx) 包含 SHEET_DEPTH=165 大片纵向逆向渐隐与 visualH + margin-bottom 60fps 柔顺下拉引擎',
+  skinSrc.includes('streaming gradient reveal') && skinSrc.includes('SHEET_DEPTH = 165') && skinSrc.includes('visualH') && skinSrc.includes("setProperty('margin-bottom'") && skinSrc.includes('requestAnimationFrame') && skinSrc.includes('MutationObserver'));
 
 console.log('[8] Phase D：浮现卡片与上拉/下拉菜单渐变出现与消失动效');
 ok('GLOBAL_CSS 含透明毛玻璃底衬层中和（[data-menu-backing] opacity: 0）',
@@ -252,11 +253,10 @@ ok('GLOBAL_CSS 包含 .cb-exit-ghost 离场残影容器规则（fixed / pointer-
   skinSrc.includes('.cb-exit-ghost') && skinSrc.includes('position: fixed !important') && skinSrc.includes('pointer-events: none !important'));
 ok('apply(ctx) 包含浮层离场残影 effect（floating card exit transition + WeakMap + sanitizeGhost）',
   skinSrc.includes('floating card exit transition') && skinSrc.includes('FLOAT_SELECTOR') && skinSrc.includes('WeakMap') && skinSrc.includes('sanitizeGhost'));
-ok('P0/P1/P2 对抗审查修复项（排除 aria-modal 模态框 + [data-trigger-menu] + hasActiveCards O(1) 门禁 + 尾块防误挂 + :where 零权重排除）',
+ok('P0/P1/P2 对抗审查修复项（排除 aria-modal 模态框 + [data-trigger-menu] + hasActiveCards O(1) 门禁 + :where 零权重排除）',
   skinSrc.includes(':not([aria-modal="true"]):not([data-shortcut-modal])') &&
   skinSrc.includes('[data-trigger-menu]') &&
   skinSrc.includes('hasActiveCards') &&
-  skinSrc.includes('rootRect.bottom - tailRect.bottom > 20') &&
   skinSrc.includes(':where(:not('));
 
 console.log('[9] GitHub Issue #1：跨平台 Windows DirectWrite 字体别名、回退栈与免哈希正文规则');

@@ -155,78 +155,84 @@ window.__ModuleLoader__.load({
 		  '--dsw-alias-settings-card-stroke': pair('#C6BFAE')
 		};
 
+		// 跨平台 CSS Modules 通用选择器构造器（同时命中 macOS <hash>_<name>、Windows Vite _<name>_<hash>_<line> 与多类名拼接）
+		function c(name) {
+		  return ':is([class$="_' + name + '"], [class*="_' + name + ' "], [class*="_' + name + '_"])';
+		}
+
 		// 全局微调（官方 token 面之外的唯一补充，保持极薄）
 		var GLOBAL_CSS = [
 		  '::selection { background: rgba(217, 119, 87, 0.25); }',
 		  // 微负字距（-0.01em）：西文词组凝聚成致密墨块带，强化「扎实沉稳」质感（对中文影响轻微）
-		  // 同时在 body 声明默认 --cb-scale: 1 作为参数化等比缩放基数
-		  'body { --cb-scale: 1; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }',
+		  // 同时在 :root 与 body 声明默认 --cb-scale: 1 作为参数化等比缩放基数
+		  ':root, body { --cb-scale: 1; }',
+		  'body { -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }',
 		  // darwin 平台特化层中和：桌面端 CSS 对侧栏列叠了 wash 渐变（#8f89b8 紫灰 /
 		  // #7a9bf0 蓝，0.2.2 起改由 sidebar-wash-*/sidebar-tint token 驱动，token 已置
 		  // transparent）+ 本规则 !important 双保险覆盖回暖纸目标色；sidebarCol 为 CSS
 		  // Modules local 名后缀（hash 前缀构建间变化，local 名稳定——0.2.2-rc.3 实测仍命中），
 		  // 官方改名时本规则失效、无害回落平台层。
-		  '[data-platform="darwin"] [class$="_sidebarCol"] { background: #F1EEE7 !important; }',
+		  '[data-platform="darwin"] [class$="_sidebarCol"], [data-platform="darwin"] ' + c('sidebarCol') + ' { background: #F1EEE7 !important; }',
 		  // 正文阅读层：Anthropic Serif 西文 + 苹方/雅黑中文（对齐 Claude Desktop 原生观感）。
 		  // 同时绑定 CSS Modules 永久稳定 local 名 [class*="_markdown_"] / [class$="_markdown"]
 		  // （对应 ui-primitives MarkdownText.module.css 的 .markdown）与局部 --dsw-font-markdown-* 变量，
 		  // 穿透子组件 `font: var(--dsw-font-markdown-base)` 简写覆盖，跨 DSH 0.2.0/0.2.1/0.2.2+ 全版本永久生效。
 		  '.XNZzAa_root, .XNZzAa_body, [class*="_markdown_"], [class$="_markdown"] { --dsw-font-family: ' + FONT_READING + ' !important; --dsw-font-markdown-base: var(--dsh-content-font-size, 14px) / calc(24px + var(--dsh-content-font-delta, 0px)) ' + FONT_READING + ' !important; --dsw-font-markdown-base-font-family: ' + FONT_READING + ' !important; --dsw-font-markdown-base-strong: 600 var(--dsh-content-font-size, 14px) / calc(24px + var(--dsh-content-font-delta, 0px)) ' + FONT_READING + ' !important; --dsw-font-markdown-base-strong-font-family: ' + FONT_READING + ' !important; --dsw-font-markdown-base-italic: italic var(--dsh-content-font-size, 14px) / calc(24px + var(--dsh-content-font-delta, 0px)) ' + FONT_READING + ' !important; --dsw-font-markdown-base-italic-font-family: ' + FONT_READING + ' !important; --dsw-font-markdown-base-strong-italic: italic 600 var(--dsh-content-font-size, 14px) / calc(24px + var(--dsh-content-font-delta, 0px)) ' + FONT_READING + ' !important; --dsw-font-markdown-base-strong-italic-font-family: ' + FONT_READING + ' !important; --dsw-font-markdown-table: var(--dsh-content-font-size-secondary, 13px) / calc(22px + var(--dsh-content-font-delta-secondary, 0px)) ' + FONT_READING + ' !important; --dsw-font-markdown-table-font-family: ' + FONT_READING + ' !important; --dsw-font-markdown-table-head: 500 var(--dsh-content-font-size-secondary, 13px) / calc(22px + var(--dsh-content-font-delta-secondary, 0px)) ' + FONT_READING + ' !important; --dsw-font-markdown-table-head-font-family: ' + FONT_READING + ' !important; font-family: ' + FONT_READING + ' !important; }',
 		  '[class*="_markdown_"] :where(p, li, blockquote, td, th), [class$="_markdown"] :where(p, li, blockquote, td, th) { font-family: ' + FONT_READING + ' !important; }',
-		  // 输入卡片（asar 锚点 0.2.2-rc.3：JZLxKW_card，ui-conversation，排除
-		  // cardWorkspaceTrigger 虚线选区态）：纯白卡片（input-major token）浮于略深主区
+		  // 输入卡片（兼容 macOS JZLxKW_card 与跨平台通用 card）：纯白卡片（input-major token）浮于略深主区
 		  // 上的对比由本组阴影承担：
 		  // 1) 边线 1/3 加粗加深（0.5px→0.67px，stroke #A89F8E）；
 		  // 2) 初始即有细微外散暖晕（双层低透明暖褐扩散，替代官方中性黑柔光）；
 		  // 3) 聚焦（光标进入）时暖晕以快速动效（0.18s 官方 ease）大幅增强：
 		  //    更深边线 + 双层加大加深的暖光外散 + 陶土色 3px 光环。
 		  // 纯 CSS focus-within，零 JS、零轮询。
-		  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger) { --dsw-elevation-stroke-color: #A89F8E !important; box-shadow: 0 0 0 0.67px var(--dsw-elevation-stroke-color), 0 2px 10px 0 rgba(96, 76, 55, 0.05), 0 8px 28px 0 rgba(96, 76, 55, 0.06) !important; transition: box-shadow 0.18s var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)) !important; }',
-		  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger):focus-within { box-shadow: 0 0 0 0.67px #978D7A, 0 4px 18px 0 rgba(180, 118, 76, 0.10), 0 12px 44px 0 rgba(180, 118, 76, 0.16), 0 0 0 3px rgba(217, 119, 87, 0.10) !important; }',
-		  // 左右纵横双向等比例同步缩放（方案一：原生参数化 --cb-scale 引擎）
+		  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger), ' + c('card') + ':not(' + c('cardWorkspaceTrigger') + '):has(textarea) { --dsw-elevation-stroke-color: #A89F8E !important; box-shadow: 0 0 0 0.67px var(--dsw-elevation-stroke-color), 0 2px 10px 0 rgba(96, 76, 55, 0.05), 0 8px 28px 0 rgba(96, 76, 55, 0.06) !important; transition: box-shadow 0.18s var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)) !important; }',
+		  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger):focus-within, ' + c('card') + ':not(' + c('cardWorkspaceTrigger') + '):has(textarea):focus-within { box-shadow: 0 0 0 0.67px #978D7A, 0 4px 18px 0 rgba(180, 118, 76, 0.10), 0 12px 44px 0 rgba(180, 118, 76, 0.16), 0 0 0 3px rgba(217, 119, 87, 0.10) !important; }',
+		  // 左右纵横双向等比例同步缩放（方案一：原生参数化 --cb-scale 引擎，跨平台免哈希全兼容）
 		  // ---------------------------------------------------------------------------
 		  // 整页布局级缩放不走 CSS zoom（弹层库 rect 视觉坐标与 style.top 布局单位
 		  // 错乘，结构性错位）。本组规则保留 52px 顶栏红绿灯安全区（topStrip）与
 		  // 56px 折叠态窄轨（collapsed/rail），仅对展开态侧栏、目录树行距、图标、
-		  // 设置触发器与右侧对话正文列宽进行纵横同步等比缩放（锚点：DSH 0.2.2-rc.3）：
-		  '.kB3qhq_root { --dsh-sidebar-inline-padding: calc(8px * var(--cb-scale, 1)) !important; --dsh-sidebar-row-padding: calc(12px * var(--cb-scale, 1)) !important; --dsh-sidebar-label-gap: calc(6px * var(--cb-scale, 1)) !important; }',
-		  '.kB3qhq_root, .kB3qhq_newSession { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; }',
-		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_logoRow { height: calc(60px * var(--cb-scale, 1)) !important; padding: calc(8px * var(--cb-scale, 1)) 0 calc(8px * var(--cb-scale, 1)) calc(8px * var(--cb-scale, 1)) !important; }',
-		  '.kB3qhq_brandName { font-size: calc(18px * var(--cb-scale, 1)) !important; line-height: calc(24px * var(--cb-scale, 1)) !important; height: calc(24px * var(--cb-scale, 1)) !important; }',
-		  '.kB3qhq_fallbackBrandName { font-size: calc(17px * var(--cb-scale, 1)) !important; }',
-		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession { height: calc(38px * var(--cb-scale, 1)) !important; padding: calc(8px * var(--cb-scale, 1)) calc(12px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
-		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelList { gap: calc(2px * var(--cb-scale, 1)) !important; margin-bottom: calc(8px * var(--cb-scale, 1)) !important; }',
-		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelRow { min-height: calc(32px * var(--cb-scale, 1)) !important; padding-block: calc(5px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
-		  '.kB3qhq_panelUnpin { top: calc((32px * var(--cb-scale, 1) - 28px) / 2) !important; }',
-		  '.Kjh-qa_root:not(.Kjh-qa_rail) { --workspace-toolbar-height: calc(36px * var(--cb-scale, 1)) !important; }',
-		  '.Kjh-qa_sectionLabel { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; line-height: calc(20px * var(--cb-scale, 1)) !important; }',
-		  '.Kjh-qa_searchExpanded { height: calc(32px * var(--cb-scale, 1)) !important; }',
-		  '.Kjh-qa_searchInput { font-size: calc(13px * var(--cb-scale, 1)) !important; line-height: calc(18px * var(--cb-scale, 1)) !important; }',
-		  '.Kjh-qa_flatList > * + *, .Kjh-qa_searchTree > [role="treeitem"] + [role="treeitem"], .Kjh-qa_groupSection > * + * { margin-top: calc(2px * var(--cb-scale, 1)) !important; }',
-		  '.Kjh-qa_groupSection + .Kjh-qa_groupSection { margin-top: calc(4px * var(--cb-scale, 1)) !important; }',
-		  '.JoiKIa_projectRow, .JoiKIa_sessionRow { height: calc(32px * var(--cb-scale, 1)) !important; }',
-		  '.JoiKIa_title, .JoiKIa_renameInput, .JoiKIa_searchResultTitle, .JoiKIa_hoverTitle { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; line-height: calc(20px * var(--cb-scale, 1)) !important; }',
-		  '.JoiKIa_slot { width: calc(16px * var(--cb-scale, 1)) !important; height: calc(20px * var(--cb-scale, 1)) !important; }',
-		  '.JoiKIa_slot svg, .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelGlyph svg, .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSessionContent > svg, ._77Pn0W_trigger:not(._77Pn0W_rail) svg { transform: scale(var(--cb-scale, 1)); transform-origin: center; }',
-		  '.JoiKIa_time { font-size: calc(10px * var(--cb-scale, 1)) !important; line-height: calc(16px * var(--cb-scale, 1)) !important; }',
-		  '.JoiKIa_meta, .JoiKIa_searchResultWorkspace, .JoiKIa_searchResultSnippet, .Kjh-qa_sessionOverflowButton { font-size: calc(12px * var(--cb-scale, 1)) !important; line-height: calc(18px * var(--cb-scale, 1)) !important; }',
-		  '.Kjh-qa_sessionOverflowButton { height: calc(28px * var(--cb-scale, 1)) !important; }',
-		  '.JoiKIa_searchResultRow { min-height: calc(48px * var(--cb-scale, 1)) !important; padding-block: calc(4px * var(--cb-scale, 1)) !important; }',
-		  '._77Pn0W_trigger:not(._77Pn0W_rail) { height: calc(42px * var(--cb-scale, 1)) !important; font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
+		  // 设置触发器与右侧对话正文列宽进行纵横同步等比缩放（同时兼容 macOS 与 Windows 构建）：
+		  '.kB3qhq_root, aside' + c('root') + ', ' + c('sidebarCol') + ' ' + c('root') + ' { --dsh-sidebar-inline-padding: calc(8px * var(--cb-scale, 1)) !important; --dsh-sidebar-row-padding: calc(12px * var(--cb-scale, 1)) !important; --dsh-sidebar-label-gap: calc(6px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_root, .kB3qhq_newSession, aside' + c('root') + ', ' + c('newSession') + ', ' + c('panelRow') + ', ' + c('panelLabel') + ' { font-size: calc(14px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_logoRow, :not(' + c('collapsed') + ') > ' + c('logoRow') + ' { height: calc(60px * var(--cb-scale, 1)) !important; padding: calc(8px * var(--cb-scale, 1)) 0 calc(8px * var(--cb-scale, 1)) calc(8px * var(--cb-scale, 1)) !important; }',
+		  '[data-windows-titlebar] .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_logoRow, [data-windows-titlebar] :not(' + c('collapsed') + ') > ' + c('logoRow') + ' { height: calc(40px * var(--cb-scale, 1)) !important; padding-top: 0 !important; padding-bottom: 0 !important; }',
+		  '.kB3qhq_brandName, ' + c('brandName') + ' { font-size: calc(18px * var(--cb-scale, 1)) !important; line-height: calc(24px * var(--cb-scale, 1)) !important; height: calc(24px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_fallbackBrandName, ' + c('fallbackBrandName') + ' { font-size: calc(17px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession, :not(' + c('collapsed') + ') > ' + c('topSection') + ' ' + c('newSession') + ' { height: calc(38px * var(--cb-scale, 1)) !important; padding: calc(8px * var(--cb-scale, 1)) calc(12px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelList, :not(' + c('collapsed') + ') > ' + c('panelList') + ' { gap: calc(2px * var(--cb-scale, 1)) !important; margin-bottom: calc(8px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelRow, :not(' + c('collapsed') + ') > ' + c('panelList') + ' ' + c('panelRow') + ' { min-height: calc(32px * var(--cb-scale, 1)) !important; padding-block: calc(5px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_panelUnpin, ' + c('panelUnpin') + ' { top: calc((32px * var(--cb-scale, 1) - 28px) / 2) !important; }',
+		  '.Kjh-qa_root:not(.Kjh-qa_rail), ' + c('scrollArea') + ' ' + c('root') + ':not(' + c('rail') + ') { --workspace-toolbar-height: calc(36px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_sectionLabel, ' + c('sectionLabel') + ' { font-size: calc(14px * var(--cb-scale, 1)) !important; line-height: calc(20px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_searchExpanded, ' + c('searchExpanded') + ' { height: calc(32px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_searchInput, ' + c('searchInput') + ' { font-size: calc(13px * var(--cb-scale, 1)) !important; line-height: calc(18px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_flatList > * + *, .Kjh-qa_searchTree > [role="treeitem"] + [role="treeitem"], .Kjh-qa_groupSection > * + *, ' + c('flatList') + ' > * + *, ' + c('searchTree') + ' > [role="treeitem"] + [role="treeitem"], ' + c('groupSection') + ' > * + * { margin-top: calc(2px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_groupSection + .Kjh-qa_groupSection, ' + c('groupSection') + ' + ' + c('groupSection') + ' { margin-top: calc(4px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_projectRow, .JoiKIa_sessionRow, ' + c('projectRow') + ', ' + c('sessionRow') + ', [data-row-key^="workspace:"], [data-row-key^="session:"], [data-sidebar-workspace-header] { height: calc(32px * var(--cb-scale, 1)) !important; min-height: calc(32px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_title, .JoiKIa_renameInput, .JoiKIa_searchResultTitle, .JoiKIa_hoverTitle, ' + c('projectRow') + ' ' + c('title') + ', ' + c('sessionRow') + ' ' + c('title') + ', [data-row-key^="workspace:"] ' + c('title') + ', [data-row-key^="session:"] ' + c('title') + ', ' + c('renameInput') + ', ' + c('searchResultTitle') + ', ' + c('hoverTitle') + ' { font-size: calc(14px * var(--cb-scale, 1)) !important; line-height: calc(20px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_slot, ' + c('projectRow') + ' ' + c('slot') + ', ' + c('sessionRow') + ' ' + c('slot') + ', [data-row-key] ' + c('slot') + ' { width: calc(16px * var(--cb-scale, 1)) !important; height: calc(20px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_slot svg, .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelGlyph svg, .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSessionContent > svg, ._77Pn0W_trigger:not(._77Pn0W_rail) svg, ' + c('slot') + ' svg, :not(' + c('collapsed') + ') ' + c('panelGlyph') + ' svg, :not(' + c('collapsed') + ') ' + c('newSessionContent') + ' > svg, ' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + ') svg { transform: scale(var(--cb-scale, 1)); transform-origin: center; }',
+		  '.JoiKIa_time, ' + c('sessionRow') + ' ' + c('time') + ', [data-row-key^="session:"] ' + c('time') + ' { font-size: calc(10px * var(--cb-scale, 1)) !important; line-height: calc(16px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_meta, .JoiKIa_searchResultWorkspace, .JoiKIa_searchResultSnippet, .Kjh-qa_sessionOverflowButton, ' + c('projectRow') + ' ' + c('meta') + ', ' + c('searchResultWorkspace') + ', ' + c('searchResultSnippet') + ', ' + c('sessionOverflowButton') + ', [data-row-key^="overflow:"] { font-size: calc(12px * var(--cb-scale, 1)) !important; line-height: calc(18px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_sessionOverflowButton, ' + c('sessionOverflowButton') + ', [data-row-key^="overflow:"] { height: calc(28px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_searchResultRow, ' + c('searchResultRow') + ' { min-height: calc(48px * var(--cb-scale, 1)) !important; padding-block: calc(4px * var(--cb-scale, 1)) !important; }',
+		  '._77Pn0W_trigger:not(._77Pn0W_rail), ' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + ') { height: calc(42px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
 		  // 右侧主对话区横向内容列宽同步缩放（保留用户手动拖拽 --dsh-chat-user-width 优先级）
-		  '.kiGsTW_body { --dsh-chat-content-width: var(--dsh-chat-user-width, min(calc(var(--dsh-conversation-column-width, 100vw) - 64px), clamp(calc(680px * var(--cb-scale, 1)), calc(var(--dsh-conversation-column-width, 0px) * 0.64 * var(--cb-scale, 1)), calc(920px * var(--cb-scale, 1))))) !important; }',
+		  '.kiGsTW_body, [data-conversation-content], ' + c('body') + ':has(> [data-conversation-content]) { --dsh-chat-content-width: var(--dsh-chat-user-width, min(calc(var(--dsh-conversation-column-width, 100vw) - 64px), clamp(calc(680px * var(--cb-scale, 1)), calc(var(--dsh-conversation-column-width, 0px) * 0.64 * var(--cb-scale, 1)), calc(920px * var(--cb-scale, 1))))) !important; }',
 
 		  // 实体层次感补齐与交互加固（Stage 1 Hover → Stage 2 Active / Latched-Open 实体状态机）
 		  // 模块 1：全界面按钮与下拉触发器「双阶变色」状态机（使用 :where() 消除多重 :not() 优先级膨胀）
 		  'button, [role="menuitem"], [role="menuitemradio"], [role="option"] { transition: background-color 0.1s ease, box-shadow 0.12s ease; }',
-		  'button[aria-haspopup][aria-expanded="true"]:not(:disabled), [role="button"][aria-haspopup][aria-expanded="true"]:not([aria-disabled="true"]), button:has([class$="_chevronOpen"], [class*="_chevronOpen "]), [class$="_trigger"][aria-expanded="true"]:not(:disabled), [class*="_trigger_"][aria-expanded="true"]:not(:disabled), button[class$="_pill"][aria-expanded="true"], [class$="_selectorButton"][aria-expanded="true"], [class$="_panelRow"][aria-expanded="true"], [class$="_projectRow"][class*="_menuOpen"], [class$="_sessionRow"][class*="_menuOpen"] { background-color: var(--dsw-alias-interactive-bg-active) !important; color: var(--dsw-alias-label-primary) !important; }',
-		  'button:not(:disabled):where(:not([class*="_primary"], [class*="_sendButton"], [class*="_add"], [class*="_newSession"], [class*="_chip"])):active, [role="menuitem"]:not(:disabled):active, [role="menuitemradio"]:not(:disabled):active, [role="option"]:not(:disabled):active, [class$="_projectRow"]:active, [class$="_sessionRow"]:active, [class$="_panelRow"]:active { background-color: var(--dsw-alias-interactive-bg-active) !important; }',
+		  'button[aria-haspopup][aria-expanded="true"]:not(:disabled), [role="button"][aria-haspopup][aria-expanded="true"]:not([aria-disabled="true"]), button:has([class$="_chevronOpen"], [class*="_chevronOpen "], [class*="_chevronOpen_"]), [class$="_trigger"][aria-expanded="true"]:not(:disabled), [class*="_trigger_"][aria-expanded="true"]:not(:disabled), button[class$="_pill"][aria-expanded="true"], button[class*="_pill_"][aria-expanded="true"], [class$="_selectorButton"][aria-expanded="true"], [class*="_selectorButton_"][aria-expanded="true"], [class$="_panelRow"][aria-expanded="true"], [class*="_panelRow_"][aria-expanded="true"], ' + c('projectRow') + c('menuOpen') + ', ' + c('sessionRow') + c('menuOpen') + ' { background-color: var(--dsw-alias-interactive-bg-active) !important; color: var(--dsw-alias-label-primary) !important; }',
+		  'button:not(:disabled):where(:not([class*="_primary"], [class*="_sendButton"], [class*="_add"], [class*="_newSession"], [class*="_chip"])):active, [role="menuitem"]:not(:disabled):active, [role="menuitemradio"]:not(:disabled):active, [role="option"]:not(:disabled):active, ' + c('projectRow') + ':active, ' + c('sessionRow') + ':active, ' + c('panelRow') + ':active { background-color: var(--dsw-alias-interactive-bg-active) !important; }',
 		  '[class$="_chip"]:not(:disabled):active, [class*="_chip_"]:not(:disabled):active { background-color: rgba(217, 119, 87, 0.24) !important; }',
-		  '.JZLxKW_add, [class$="_add"] { background-color: var(--dsw-specific-selector) !important; box-shadow: inset 0 0 0 0.5px rgba(44, 43, 41, 0.08) !important; }',
-		  '.JZLxKW_add:hover:not(:disabled), [class$="_add"]:hover:not(:disabled) { background-color: #E0D8CA !important; }',
-		  '.JZLxKW_add:active:not(:disabled), .JZLxKW_add[aria-expanded="true"], [class$="_add"]:active:not(:disabled), [class$="_add"][aria-expanded="true"] { background-color: #D2C8B8 !important; box-shadow: inset 0 1px 2px rgba(44, 43, 41, 0.12) !important; }',
-		  '[class*="_primary_"]:not(:disabled):active, [class$="_primary"]:not(:disabled):active, [class$="_sendButton"]:not(:disabled):active { background-color: #B35B3E !important; }',
-		  '[class*="_outline_"]:not(:disabled):active, [class$="_outline"]:not(:disabled):active, [class*="_toolbar_"]:not(:disabled):active, [class$="_toolbar"]:not(:disabled):active, [class$="_inspectButton"]:not(:disabled):active { background-color: var(--dsw-alias-interactive-bg-active) !important; }',
+		  '.JZLxKW_add, ' + c('add') + ' { background-color: var(--dsw-specific-selector) !important; box-shadow: inset 0 0 0 0.5px rgba(44, 43, 41, 0.08) !important; }',
+		  '.JZLxKW_add:hover:not(:disabled), ' + c('add') + ':hover:not(:disabled) { background-color: #E0D8CA !important; }',
+		  '.JZLxKW_add:active:not(:disabled), .JZLxKW_add[aria-expanded="true"], ' + c('add') + ':active:not(:disabled), ' + c('add') + '[aria-expanded="true"] { background-color: #D2C8B8 !important; box-shadow: inset 0 1px 2px rgba(44, 43, 41, 0.12) !important; }',
+		  '[class*="_primary_"]:not(:disabled):active, [class$="_primary"]:not(:disabled):active, [class$="_sendButton"]:not(:disabled):active, [class*="_sendButton_"]:not(:disabled):active { background-color: #B35B3E !important; }',
+		  '[class*="_outline_"]:not(:disabled):active, [class$="_outline"]:not(:disabled):active, [class*="_toolbar_"]:not(:disabled):active, [class$="_toolbar"]:not(:disabled):active, [class$="_inspectButton"]:not(:disabled):active, [class*="_inspectButton_"]:not(:disabled):active { background-color: var(--dsw-alias-interactive-bg-active) !important; }',
 
 		  // 模块 2：下拉菜单与浮层卡片实体立体感（覆盖全部 [data-menu-material="translucent"]，并排除全屏设置模态框）
 		  '[data-menu-material="translucent"], [class*="_surface_"][role="menu"], [class*="_surface_"][role="group"], [class*="_list_"][role="menu"], .htuFrW_menu, [class$="_menu"][role="menu"], [class$="_menu"][role="group"], .mR10tW_panel, [class$="_panel"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal]), [class*="_panel_"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal]) { --dsw-elevation-stroke-color: #C5BCAE !important; box-shadow: 0 0 0 0.75px #C5BCAE, 0 4px 12px -2px rgba(44, 43, 41, 0.08), 0 14px 32px -4px rgba(44, 43, 41, 0.12) !important; }',
@@ -234,11 +240,11 @@ window.__ModuleLoader__.load({
 		  '[class*="_list_"] [class*="_footer_"], [class$="_list"] [class$="_footer"], [class*="_list_"] [role="separator"], [class$="_list"] [role="separator"] { border-color: #E2DDD2 !important; }',
 
 		  // 模块 3：左侧边栏「新建会话」主按钮与「悬停 vs 选中 vs 按下」三态分层
-		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession, [class$="_root"]:not([class*="_collapsed"]) [class$="_newSession"] { background: #FAF7F2 !important; border: 0.5px solid #CFC8B8 !important; box-shadow: 0 1px 2px rgba(44, 43, 41, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important; }',
-		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession:hover, [class$="_root"]:not([class*="_collapsed"]) [class$="_newSession"]:hover { background: #EFECE4 !important; border-color: #C2B9A7 !important; }',
-		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession:active, [class$="_root"]:not([class*="_collapsed"]) [class$="_newSession"]:active { background: #E2DDD2 !important; box-shadow: inset 0 1px 2px rgba(44, 43, 41, 0.10) !important; }',
-		  '.JoiKIa_sessionRow.JoiKIa_selected, .kB3qhq_panelEntryActive, [class$="_sessionRow"][class*="_selected"] { background-color: rgba(48, 42, 34, 0.115) !important; font-weight: 500 !important; box-shadow: inset 0 0 0 0.5px rgba(44, 43, 41, 0.07) !important; }',
-		  '.JoiKIa_sessionRow.JoiKIa_selected:hover, .kB3qhq_panelEntryActive:hover, [class$="_sessionRow"][class*="_selected"]:hover { background-color: var(--dsw-alias-interactive-bg-active) !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession, ' + c('root') + ':not(' + c('collapsed') + ') ' + c('newSession') + ' { background: #FAF7F2 !important; border: 0.5px solid #CFC8B8 !important; box-shadow: 0 1px 2px rgba(44, 43, 41, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession:hover, ' + c('root') + ':not(' + c('collapsed') + ') ' + c('newSession') + ':hover { background: #EFECE4 !important; border-color: #C2B9A7 !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession:active, ' + c('root') + ':not(' + c('collapsed') + ') ' + c('newSession') + ':active { background: #E2DDD2 !important; box-shadow: inset 0 1px 2px rgba(44, 43, 41, 0.10) !important; }',
+		  '.JoiKIa_sessionRow.JoiKIa_selected, .kB3qhq_panelEntryActive, ' + c('sessionRow') + c('selected') + ', ' + c('panelEntryActive') + ', [data-row-key^="session:"][aria-selected="true"] { background-color: rgba(48, 42, 34, 0.115) !important; font-weight: 500 !important; box-shadow: inset 0 0 0 0.5px rgba(44, 43, 41, 0.07) !important; }',
+		  '.JoiKIa_sessionRow.JoiKIa_selected:hover, .kB3qhq_panelEntryActive:hover, ' + c('sessionRow') + c('selected') + ':hover, ' + c('panelEntryActive') + ':hover, [data-row-key^="session:"][aria-selected="true"]:hover { background-color: var(--dsw-alias-interactive-bg-active) !important; }',
 
 		  // 模块 4：Markdown 代码块、工具调用卡片与终端块实体框线
 		  '.md-code-block, [class*="_block_"]:has(> [class*="_bannerWrap_"]) { border: 0.5px solid var(--dsw-alias-border-l2) !important; box-shadow: 0 1px 3px rgba(44, 43, 41, 0.03) !important; }',
@@ -251,20 +257,23 @@ window.__ModuleLoader__.load({
 		  '[class*="_control_"] > [class*="_indicator_"], [class*="_tabs_"] > [class*="_indicator_"] { background: #FFFFFF !important; box-shadow: 0 0 0 0.5px #CFC8B8, 0 1px 3px rgba(44, 43, 41, 0.08) !important; }',
 		  '[class*="_bubble_"]:not([role="tooltip"]) { border: 0.5px solid #E2DACB !important; box-shadow: 0 1px 2px rgba(44, 43, 41, 0.03) !important; }',
 
-		  // Phase C：流式状态栏 Claude 橙色系、摆动鲸鱼大幅慢速摇摆与流式渐变浮现
+		  // Phase C：流式状态栏 Claude 橙色系、摆动鲸鱼大幅慢速摇摆与「大片逆向渐隐 + 柔顺下拉」流式引擎
 		  // 1. 流式状态栏橙色加固
-		  '[data-chat-running], .tnXGgG_running, [class$="_running"] { --dsw-alias-label-deep-diving: #CE6846 !important; --dsw-alias-label-deep-diving-shimmer: #F4B293 !important; --dsw-alias-label-shimmer: #F4B293 !important; color: #CE6846 !important; }',
+		  '[data-chat-running], .tnXGgG_running, ' + c('running') + ' { --dsw-alias-label-deep-diving: #CE6846 !important; --dsw-alias-label-deep-diving-shimmer: #F4B293 !important; --dsw-alias-label-shimmer: #F4B293 !important; color: #CE6846 !important; }',
 
 		  // 2. 摆动鲸鱼：关闭 APNG 解码、解除容器裁切，以 43% 86% 为轴心施加 GPU 慢速大幅摆动
-		  '.tnXGgG_runningWhaleAnimated, [data-chat-running] [class$="_runningWhaleAnimated"] { display: none !important; mask: none !important; -webkit-mask: none !important; }',
-		  '.tnXGgG_runningIcon, [data-chat-running] [class$="_runningIcon"] { contain: layout style !important; overflow: visible !important; }',
-		  '.tnXGgG_runningWhaleStill, [data-chat-running] [class$="_runningWhaleStill"] { display: block !important; transform-origin: 43% 86% !important; will-change: transform; animation: cb-whale-slow-swing 3.2s cubic-bezier(0.42, 0, 0.58, 1) infinite !important; }',
-		  '[data-chat-running][data-holding] .tnXGgG_runningWhaleStill, [data-chat-running][data-holding] [class$="_runningWhaleStill"] { animation-play-state: paused !important; }',
+		  '.tnXGgG_runningWhaleAnimated, [data-chat-running] ' + c('runningWhaleAnimated') + ' { display: none !important; mask: none !important; -webkit-mask: none !important; }',
+		  '.tnXGgG_runningIcon, [data-chat-running] ' + c('runningIcon') + ' { contain: layout style !important; overflow: visible !important; }',
+		  '.tnXGgG_runningWhaleStill, [data-chat-running] ' + c('runningWhaleStill') + ' { display: block !important; transform-origin: 43% 86% !important; will-change: transform; animation: cb-whale-slow-swing 3.2s cubic-bezier(0.42, 0, 0.58, 1) infinite !important; }',
+		  '[data-chat-running][data-holding] .tnXGgG_runningWhaleStill, [data-chat-running][data-holding] ' + c('runningWhaleStill') + ' { animation-play-state: paused !important; }',
 		  '@keyframes cb-whale-slow-swing { 0%, 100% { transform: translateY(0.3px) rotate(-22deg); } 50% { transform: translateY(-0.5px) rotate(22deg); } }',
-		  '@media (prefers-reduced-motion: reduce) { .tnXGgG_runningWhaleStill, [data-chat-running] [class$="_runningWhaleStill"] { animation: none !important; } }',
+		  '@media (prefers-reduced-motion: reduce) { .tnXGgG_runningWhaleStill, [data-chat-running] ' + c('runningWhaleStill') + ' { animation: none !important; } }',
 
-		  // 3. 流式出字 Antigravity 级渐变浮现引擎（容器级纵向渐变幕布 + 尾行单调递增横向推进，预留 2px 呼吸边防止裁切代码块边框）
-		  '[data-cb-stream-root] { padding-inline: 2px; margin-inline: -2px; -webkit-mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-stream-y-solid, 10000px), rgba(0, 0, 0, 0.55) calc(var(--cb-stream-y-solid, 10000px) * 0.4 + var(--cb-stream-y-end, 10000px) * 0.6), transparent var(--cb-stream-y-end, 10000px)); mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-stream-y-solid, 10000px), rgba(0, 0, 0, 0.55) calc(var(--cb-stream-y-solid, 10000px) * 0.4 + var(--cb-stream-y-end, 10000px) * 0.6), transparent var(--cb-stream-y-end, 10000px)); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }',
+		  // 3. 流式输出「大片纵向逆向渐隐 + 整块柔顺下浮」视觉引擎（165px 多阶 S 曲线纵向羽化幕布 + 块级柔和下拉浮现）
+		  '[data-cb-stream-root] { padding-inline: 2px; margin-inline: -2px; will-change: mask-image, -webkit-mask-image, margin-bottom; -webkit-mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-stream-y-solid, 10000px), rgba(0, 0, 0, 0.86) calc(var(--cb-stream-y-solid, 10000px) * 0.78 + var(--cb-stream-y-end, 10000px) * 0.22), rgba(0, 0, 0, 0.54) calc(var(--cb-stream-y-solid, 10000px) * 0.50 + var(--cb-stream-y-end, 10000px) * 0.50), rgba(0, 0, 0, 0.20) calc(var(--cb-stream-y-solid, 10000px) * 0.22 + var(--cb-stream-y-end, 10000px) * 0.78), transparent var(--cb-stream-y-end, 10000px)); mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-stream-y-solid, 10000px), rgba(0, 0, 0, 0.86) calc(var(--cb-stream-y-solid, 10000px) * 0.78 + var(--cb-stream-y-end, 10000px) * 0.22), rgba(0, 0, 0, 0.54) calc(var(--cb-stream-y-solid, 10000px) * 0.50 + var(--cb-stream-y-end, 10000px) * 0.50), rgba(0, 0, 0, 0.20) calc(var(--cb-stream-y-solid, 10000px) * 0.22 + var(--cb-stream-y-end, 10000px) * 0.78), transparent var(--cb-stream-y-end, 10000px)); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }',
+		  '@keyframes cb-stream-sheet-in { 0% { opacity: 0.08; transform: translateY(-7px); } 100% { opacity: 1; transform: translateY(0); } }',
+		  '[data-cb-stream-root] > :where(p, ul, ol, pre, h1, h2, h3, h4, h5, h6, blockquote, table, div), [data-cb-stream-root] li { animation: cb-stream-sheet-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }',
+		  '@media (prefers-reduced-motion: reduce) { [data-cb-stream-root] > :where(p, ul, ol, pre, h1, h2, h3, h4, h5, h6, blockquote, table, div), [data-cb-stream-root] li { animation: none !important; } }',
 		  '[data-cb-stream-tail="horizontal"] { -webkit-mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-tail-upper-h, 0px), transparent var(--cb-tail-upper-h, 0px)), linear-gradient(90deg, #000 0px, #000 var(--cb-stream-x-solid, 2000px), rgba(0, 0, 0, 0.5) calc(var(--cb-stream-x-solid, 2000px) * 0.4 + var(--cb-stream-x-end, 2000px) * 0.6), transparent var(--cb-stream-x-end, 2000px)); mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-tail-upper-h, 0px), transparent var(--cb-tail-upper-h, 0px)), linear-gradient(90deg, #000 0px, #000 var(--cb-stream-x-solid, 2000px), rgba(0, 0, 0, 0.5) calc(var(--cb-stream-x-solid, 2000px) * 0.4 + var(--cb-stream-x-end, 2000px) * 0.6), transparent var(--cb-stream-x-end, 2000px)); -webkit-mask-size: 100% 100%, 100% var(--cb-tail-line-h, 30px); mask-size: 100% 100%, 100% var(--cb-tail-line-h, 30px); -webkit-mask-position: 0 0, 0 100%; mask-position: 0 0, 0 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }',
 
 		  // Phase D：浮现卡片（HoverCard）、上拉/下拉菜单与 Tooltip 渐变出现与消失质感
@@ -283,7 +292,7 @@ window.__ModuleLoader__.load({
 		  '[data-menu-material="translucent"]:not(.cb-exit-ghost) { --dsh-menu-enter: 185ms !important; --dsh-menu-dismiss: 145ms !important; transform-origin: center top; animation: cb-popup-enter-down 185ms cubic-bezier(0.16, 1, 0.3, 1) both !important; will-change: transform, opacity; }',
 
 		  // 4. 上拉卡片（底部权限选择、模型选择、/与@指令弹窗、用量统计等，排除全屏设置模态框）
-		  '[data-menu-material="translucent"][data-anchor-side="top"]:not(.cb-exit-ghost), [data-menu-material="translucent"][data-trigger-menu]:not(.cb-exit-ghost), [data-menu-material="translucent"].htuFrW_menu:not(.cb-exit-ghost), [data-menu-material="translucent"].m00Doa_card:not(.cb-exit-ghost), [data-menu-material="translucent"][class*="_sideTop"]:not(.cb-exit-ghost), .mR10tW_panel:not(.cb-exit-ghost), [class$="_panel"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal]):not(.cb-exit-ghost) { transform-origin: center bottom !important; animation: cb-popup-enter-up 185ms cubic-bezier(0.16, 1, 0.3, 1) both !important; will-change: transform, opacity; }',
+		  '[data-menu-material="translucent"][data-anchor-side="top"]:not(.cb-exit-ghost), [data-menu-material="translucent"][data-trigger-menu]:not(.cb-exit-ghost), [data-menu-material="translucent"].htuFrW_menu:not(.cb-exit-ghost), [data-menu-material="translucent"].m00Doa_card:not(.cb-exit-ghost), [data-menu-material="translucent"][class*="_sideTop"]:not(.cb-exit-ghost), .mR10tW_panel:not(.cb-exit-ghost), [class$="_panel"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal]):not(.cb-exit-ghost), [class*="_panel_"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal]):not(.cb-exit-ghost) { transform-origin: center bottom !important; animation: cb-popup-enter-up 185ms cubic-bezier(0.16, 1, 0.3, 1) both !important; will-change: transform, opacity; }',
 
 		  // 5. 解决 MenuSurface 原版对子元素的重复动画叠加与原生 dismiss 动画
 		  '[data-menu-material="translucent"][data-menu-phase="enter"] > * { animation: none !important; }',
@@ -337,7 +346,12 @@ window.__ModuleLoader__.load({
 
 		    function writeScale(textSize) {
 		      var scale = Number((textSize / BASE_TEXT_SIZE).toFixed(4));
-		      document.body.style.setProperty('--cb-scale', String(scale));
+		      if (document.documentElement && document.documentElement.style) {
+		        document.documentElement.style.setProperty('--cb-scale', String(scale));
+		      }
+		      if (document.body && document.body.style) {
+		        document.body.style.setProperty('--cb-scale', String(scale));
+		      }
 		      return scale;
 		    }
 
@@ -460,43 +474,34 @@ window.__ModuleLoader__.load({
 		      if (offSlots) { try { offSlots(); } catch (_) {} offSlots = null; }
 		      if (offInject) { try { offInject(); } catch (_) {} offInject = null; }
 		      if (offTheme) { try { offTheme(); } catch (_) {} offTheme = null; }
-		      document.body.style.removeProperty('--cb-scale');
+		      if (document.documentElement && document.documentElement.style) {
+		        document.documentElement.style.removeProperty('--cb-scale');
+		      }
+		      if (document.body && document.body.style) {
+		        document.body.style.removeProperty('--cb-scale');
+		      }
 		    };
 		  }, PLUGIN_ID + ': proportional scale sync');
 
-		  // 流式出字双模渐变浮现（容器级纵向拉幕 + 尾行单调递增横向推进，60fps rAF 阻尼插值，零 DOM 节点篡改）
+		  // 流式输出「大片纵向逆向渐隐 + 60fps 柔顺下拉」引擎（165px 多阶 S 曲线纵向羽化幕布 + 视觉高度阻尼下拉，零 DOM 节点篡改）
 		  ctx.effect(function () {
 		    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
+
+		    var SHEET_DEPTH = 165;      // 纵向逆向渐隐幕布深度（约 6~7 行大片羽化带）
+		    var HOLD_FRAMES_MAX = 28;   // 每次流式 token 到来后保持大片渐隐态的帧数（约 460ms）
 
 		    var rafId = null;
 		    var dirty = false;
 
 		    // 当前追踪的流式 Markdown 容器与状态（严格单调递增，禁止回退闪烁）
 		    var currentRoot = null;
-		    var ySolid = 0;
-		    var yEnd = 24;
-		    var targetY = 0;
-
-		    // 当前追踪的末尾文本块与尾行状态
-		    var currentTail = null;
-		    var currentLineTop = -9999;
-		    var xSolid = 0;
-		    var xEnd = 24;
-		    var targetX = 0;
-		    var upperH = 0;
-		    var lineH = 28;
+		    var targetY = 0;            // 真实 DOM 布局高度（getBoundingClientRect().height）
+		    var visualH = 0;            // 60fps 柔顺下拉视觉高度（通过负 margin-bottom 阻尼过渡）
+		    var ySolid = 0;             // 100% 实色显影前沿（0 .. ySolid 全实色）
+		    var yEnd = 36;              // 0% 透明底沿（ySolid .. yEnd 为大片多阶逆向渐隐区）
 		    var prevTextLen = 0;
-
-		    function cleanupTail(el) {
-		      if (!el) return;
-		      try {
-		        el.removeAttribute('data-cb-stream-tail');
-		        el.style.removeProperty('--cb-stream-x-solid');
-		        el.style.removeProperty('--cb-stream-x-end');
-		        el.style.removeProperty('--cb-tail-upper-h');
-		        el.style.removeProperty('--cb-tail-line-h');
-		      } catch (_) {}
-		    }
+		    var prevH = 0;
+		    var activeHoldFrames = 0;
 
 		    function cleanupRoot(el) {
 		      if (!el) return;
@@ -504,55 +509,26 @@ window.__ModuleLoader__.load({
 		        el.removeAttribute('data-cb-stream-root');
 		        el.style.removeProperty('--cb-stream-y-solid');
 		        el.style.removeProperty('--cb-stream-y-end');
+		        el.style.removeProperty('margin-bottom');
 		      } catch (_) {}
 		    }
 
 		    function resetAll() {
-		      if (currentTail) { cleanupTail(currentTail); currentTail = null; }
 		      if (currentRoot) { cleanupRoot(currentRoot); currentRoot = null; }
-		      currentLineTop = -9999;
-		      ySolid = 0;
-		      yEnd = 24;
 		      targetY = 0;
-		      xSolid = 0;
-		      xEnd = 24;
-		      targetX = 0;
+		      visualH = 0;
+		      ySolid = 0;
+		      yEnd = 36;
 		      prevTextLen = 0;
-		    }
-
-		    // 使用 TreeWalker 定位块内最后一个非空白 Text 节点的最后一个字符，100% 规避折叠 Range 空矩形 Bug
-		    function getLastCharRect(blockEl) {
-		      try {
-		        if (!document.createTreeWalker) return null;
-		        var walker = document.createTreeWalker(blockEl, 4 /* NodeFilter.SHOW_TEXT */, null, false);
-		        var lastText = null;
-		        var node;
-		        while ((node = walker.nextNode())) {
-		          if (node.nodeValue && node.nodeValue.trim().length > 0) {
-		            lastText = node;
-		          }
-		        }
-		        if (!lastText || !lastText.nodeValue) return null;
-		        var str = lastText.nodeValue;
-		        var endIdx = str.length;
-		        while (endIdx > 0 && /\s/.test(str.charAt(endIdx - 1))) endIdx--;
-		        if (endIdx <= 0) endIdx = str.length;
-		        var range = document.createRange();
-		        range.setStart(lastText, Math.max(0, endIdx - 1));
-		        range.setEnd(lastText, endIdx);
-		        var rects = range.getClientRects();
-		        var rect = (rects && rects.length > 0) ? rects[rects.length - 1] : range.getBoundingClientRect();
-		        return (rect && rect.width > 0 && rect.height > 0) ? rect : null;
-		      } catch (_) {
-		        return null;
-		      }
+		      prevH = 0;
+		      activeHoldFrames = 0;
 		    }
 
 		    function measureTargets() {
 		      dirty = false;
 		      var containers = document.querySelectorAll('[data-streaming], [data-variant="think"][data-state="running"]');
 		      if (!containers || containers.length === 0) {
-		        return false; // 流式标记已移除，交由 tick 完成剩余尾韵滑行后清理
+		        return false; // 流式标记已移除，交由 tick 完成剩余大片逆向渐隐与柔顺下拉收尾后清理
 		      }
 
 		      var lastContainer = containers[containers.length - 1];
@@ -566,107 +542,51 @@ window.__ModuleLoader__.load({
 		        return true;
 		      }
 
+		      // getBoundingClientRect().height 返回 border-box 高度，不受 margin-bottom 负值补偿影响
 		      var rootRect = mdRoot.getBoundingClientRect();
 		      var H = Math.max(0, Math.ceil(rootRect.height));
 
 		      if (currentRoot !== mdRoot) {
 		        if (currentRoot) cleanupRoot(currentRoot);
-		        if (currentTail) { cleanupTail(currentTail); currentTail = null; }
 		        currentRoot = mdRoot;
-		        // 新流式容器启动：若刚起步（<=64px）从 0px 柔和拉幕；若半途切入长消息则仅对最底行拉幕
-		        ySolid = H > 64 ? Math.max(0, H - 32) : 0;
-		        yEnd = ySolid + 6;
+		        if (H <= 180) {
+		          // 新流式消息刚起步：从顶部起开启整片逆向渐隐与柔顺下拉
+		          visualH = Math.min(H, 28);
+		          ySolid = 0;
+		          yEnd = Math.max(32, visualH + 4);
+		        } else {
+		          // 半途切入已较长的流式消息：在底部 SHEET_DEPTH 区间建立逆向渐隐并平滑下拉
+		          visualH = Math.max(0, H - 48);
+		          ySolid = Math.max(0, visualH - SHEET_DEPTH);
+		          yEnd = visualH + 4;
+		        }
 		        targetY = H;
-		        currentLineTop = -9999;
-		        xSolid = 0;
-		        xEnd = 24;
-		        targetX = 0;
 		        prevTextLen = rootTextLen;
+		        prevH = H;
+		        activeHoldFrames = HOLD_FRAMES_MAX;
 		        currentRoot.setAttribute('data-cb-stream-root', '');
 		        currentRoot.style.setProperty('--cb-stream-y-solid', ySolid.toFixed(1) + 'px');
 		        currentRoot.style.setProperty('--cb-stream-y-end', yEnd.toFixed(1) + 'px');
+		        var initPull = visualH - targetY;
+		        if (initPull < -0.5) {
+		          currentRoot.style.setProperty('margin-bottom', initPull.toFixed(1) + 'px');
+		        }
 		      } else {
-		        // 单调更新目标高度（若高度因折叠/重排缩小，夹逼 ySolid 防止停留在 targetY 之上）
+		        if (rootTextLen !== prevTextLen || H !== prevH) {
+		          activeHoldFrames = HOLD_FRAMES_MAX;
+		          prevTextLen = rootTextLen;
+		          prevH = H;
+		        }
 		        targetY = H;
-		        if (ySolid > targetY + 1) {
-		          ySolid = targetY + 1;
-		          yEnd = targetY + 4;
+		        // 若因折叠块收起或重排导致真实高度回缩，同步夹逼 visualH 与 ySolid
+		        if (H < visualH) {
+		          visualH = H;
+		        }
+		        if (ySolid > H) {
+		          ySolid = Math.max(0, H - 24);
 		        }
 		      }
 
-		      // 定位最末尾的正文块（代码块/表格交由容器级纵向幕布逐行浮现，避免对大 <pre> 切底行或误中上方旧段落）
-		      var blocks = mdRoot.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6');
-		      var tailBlock = blocks && blocks.length > 0 ? blocks[blocks.length - 1] : null;
-		      if (tailBlock && tailBlock.matches && tailBlock.matches('li')) {
-		        var inner = tailBlock.querySelectorAll('p, li');
-		        if (inner && inner.length > 0) tailBlock = inner[inner.length - 1];
-		      }
-
-		      var tailRect = tailBlock ? tailBlock.getBoundingClientRect() : null;
-		      // 若 tailBlock 底边距离 mdRoot 底边超过 20px，说明其下方已有 <pre>/<table> 等块正在流式生长
-		      if (tailBlock && (!tailRect || tailRect.width <= 0 || rootRect.bottom - tailRect.bottom > 20)) {
-		        tailBlock = null;
-		      }
-
-		      if (!tailBlock) {
-		        if (currentTail) { cleanupTail(currentTail); currentTail = null; }
-		        xSolid = targetX + 1;
-		        xEnd = targetX + 4;
-		        return true;
-		      }
-
-		      var charRect = getLastCharRect(tailBlock);
-		      if (!charRect) {
-		        if (currentTail) { cleanupTail(currentTail); currentTail = null; }
-		        xSolid = targetX + 1;
-		        xEnd = targetX + 4;
-		        return true;
-		      }
-
-		      var lineTopInRoot = Math.round(charRect.top - rootRect.top);
-		      var charRightInTail = Math.max(8, Math.ceil(charRect.right - tailRect.left + 2));
-		      // 扣除字形半行距（half-leading ~3-4px）：首行强制 upperH=0 防止顶边横条伪影，多行无缝衔接
-		      var rawUpper = charRect.top - tailRect.top;
-		      upperH = rawUpper < 10 ? 0 : Math.max(0, Math.floor(rawUpper - 4));
-		      lineH = Math.max(20, Math.ceil(tailRect.height - upperH));
-
-		      var isFastLineBurst = (targetY - ySolid > 36) || (charRightInTail > 140 && (currentTail !== tailBlock || Math.abs(lineTopInRoot - currentLineTop) > 8));
-
-		      if (currentTail !== tailBlock) {
-		        if (currentTail) cleanupTail(currentTail);
-		        currentTail = tailBlock;
-		        currentLineTop = lineTopInRoot;
-		        targetX = charRightInTail;
-		        if (isFastLineBurst) {
-		          xSolid = charRightInTail + 1;
-		          xEnd = charRightInTail + 4;
-		        } else {
-		          xSolid = 0;
-		          xEnd = Math.min(8, charRightInTail * 0.35);
-		        }
-		      } else if (Math.abs(lineTopInRoot - currentLineTop) > 8) {
-		        // 同一段落内折入新的一行：上一行已归入 upperH（100% 不透明）
-		        currentLineTop = lineTopInRoot;
-		        targetX = charRightInTail;
-		        if (isFastLineBurst) {
-		          xSolid = charRightInTail + 1;
-		          xEnd = charRightInTail + 4;
-		        } else {
-		          xSolid = 0;
-		          xEnd = Math.min(8, charRightInTail * 0.35);
-		        }
-		      } else {
-		        // 同一行内追加字符：targetX 单调递增；若因 Markdown 链接/行内码闭合导致行宽显著回缩，则夹逼对齐
-		        if (charRightInTail > targetX) {
-		          targetX = charRightInTail;
-		        } else if (charRightInTail < targetX - 12) {
-		          targetX = charRightInTail;
-		          if (xSolid > targetX + 1) xSolid = targetX + 1;
-		          if (xEnd > targetX + 4) xEnd = Math.max(xSolid + 3, targetX + 4);
-		        }
-		      }
-
-		      prevTextLen = rootTextLen;
 		      return true;
 		    }
 
@@ -682,88 +602,84 @@ window.__ModuleLoader__.load({
 
 		      if (!currentRoot) return;
 
-		      // 1. 双前沿单调纵向幕布（yEnd 前锋快速拉开柔光带，ySolid 后卫阻尼跟进至 100% 显影，停泊于 targetY+1..+4 实现第 0 帧零闪烁拦截）
-		      var targetYEnd = targetY + 4;
-		      var targetYSolid = targetY + 1;
-		      var endGapY = targetYEnd - yEnd;
-		      if (endGapY > 0.5) {
-		        var vLeadStep = Math.max(4.5, endGapY * 0.28);
-		        yEnd = Math.min(targetYEnd, yEnd + vLeadStep);
-		      } else {
-		        yEnd = targetYEnd;
+		      if (activeHoldFrames > 0) {
+		        activeHoldFrames--;
 		      }
 
-		      var solidGapY = targetYSolid - ySolid;
-		      if (solidGapY > 0.5) {
-		        var vTrailStep = Math.max(2.0, solidGapY * 0.14);
-		        var nextYSolid = ySolid + vTrailStep;
-		        if (targetYEnd - yEnd > 2) {
-		          nextYSolid = Math.min(nextYSolid, yEnd - 18);
-		        }
-		        ySolid = Math.max(ySolid, Math.min(targetYSolid, nextYSolid));
+		      // 1. 60fps 柔顺下拉（Smooth Pull-Down）：visualH 阻尼追赶真实高度 targetY，
+		      //    通过负 margin-bottom 抵消尚未显影的底部高度跳变，使消息外框与滚动区如丝绸般匀速下滑展开
+		      var hDiff = targetY - visualH;
+		      if (hDiff > 0.4) {
+		        var pullStep = Math.max(1.5, hDiff * 0.105);
+		        visualH = Math.min(targetY, visualH + pullStep);
 		      } else {
-		        ySolid = targetYSolid;
+		        visualH = targetY;
 		      }
-		      if (yEnd < ySolid + 3) yEnd = ySolid + 3;
+
+		      var pullMargin = visualH - targetY;
+		      if (pullMargin < -0.4 && streamActive) {
+		        currentRoot.style.setProperty('margin-bottom', pullMargin.toFixed(1) + 'px');
+		      } else {
+		        currentRoot.style.removeProperty('margin-bottom');
+		      }
+
+		      // 2. 大片纵向逆向渐隐幕布（Large-Sheet Vertical Reverse-Fade）：
+		      //    - 流式活跃期：ySolid 保持在 visualH 上方 SHEET_DEPTH（165px，约 6~7 行），
+		      //      形成从实色（100%）→ 86% → 54% → 20% → 全透明（0%）的整片纵向逆向渐隐视觉带；
+		      //      同时当 visualH < targetY 时 yEnd 严格锁在 visualH + 4px，确保被负 margin-bottom
+		      //      折叠的区域 100% 透明，绝不向下穿模叠压状态栏或输入框。
+		      //    - 流式停顿或结束收尾期：ySolid 与 yEnd 柔顺向下滑过最后几行，平滑过渡至 100% 实色显影。
+		      var isActivelyStreaming = streamActive && (activeHoldFrames > 0 || targetY - visualH > 1);
+		      var desiredYSolid;
+		      var desiredYEnd;
+
+		      if (isActivelyStreaming) {
+		        desiredYSolid = Math.max(0, visualH - SHEET_DEPTH);
+		        desiredYEnd = (targetY - visualH > 1.2) ? (visualH + 4) : (visualH + 38);
+		      } else {
+		        desiredYSolid = targetY + 8;
+		        desiredYEnd = targetY + 24;
+		      }
+
+		      if (desiredYSolid > ySolid + 0.3) {
+		        var solidRate = isActivelyStreaming ? 0.095 : 0.14;
+		        var solidMinStep = isActivelyStreaming ? 1.4 : 2.8;
+		        var solidStep = Math.max(solidMinStep, (desiredYSolid - ySolid) * solidRate);
+		        ySolid = Math.min(desiredYSolid, ySolid + solidStep);
+		      } else if (!isActivelyStreaming && desiredYSolid <= ySolid + 0.3) {
+		        ySolid = desiredYSolid;
+		      }
+
+		      if (targetY - visualH > 1.2) {
+		        // 下拉进行中：底沿紧锁 visualH + 4px，与负 margin-bottom 物理边界同步下移
+		        yEnd = Math.max(ySolid + 28, visualH + 4);
+		      } else {
+		        var endDiff = desiredYEnd - yEnd;
+		        if (Math.abs(endDiff) > 0.4) {
+		          var endStep = endDiff > 0
+		            ? Math.max(2.2, endDiff * 0.18)
+		            : Math.min(-1.8, endDiff * 0.14);
+		          yEnd = yEnd + endStep;
+		        } else {
+		          yEnd = desiredYEnd;
+		        }
+		        var minFeather = isActivelyStreaming ? 36 : 12;
+		        if (yEnd < ySolid + minFeather) {
+		          yEnd = ySolid + minFeather;
+		        }
+		      }
 
 		      currentRoot.style.setProperty('--cb-stream-y-solid', ySolid.toFixed(1) + 'px');
 		      currentRoot.style.setProperty('--cb-stream-y-end', yEnd.toFixed(1) + 'px');
 
-		      // 2. 双前沿单调尾行横向幕布（慢速出字时 xEnd 前锋与 xSolid 后卫从左向右平滑推进；快速多行时完全让位给纵向幕布）
-		      var vGap = targetYSolid - ySolid;
-		      var targetXEnd = targetX + 4;
-		      var targetXSolid = targetX + 1;
-		      if (currentTail) {
-		        if (vGap > 34) {
-		          // 快速多行流式期间：由容器级纵向幕布统一负责整行从上往下浮现，尾行横向全开
-		          xSolid = targetXSolid;
-		          xEnd = targetXEnd;
-		          if (currentTail.hasAttribute('data-cb-stream-tail')) {
-		            cleanupTail(currentTail);
-		          }
-		        } else {
-		          var endGapX = targetXEnd - xEnd;
-		          if (endGapX > 0.5) {
-		            var hLeadStep = Math.max(5.0, endGapX * 0.32);
-		            xEnd = Math.min(targetXEnd, xEnd + hLeadStep);
-		          } else {
-		            xEnd = targetXEnd;
-		          }
-
-		          var solidGapX = targetXSolid - xSolid;
-		          if (solidGapX > 0.5) {
-		            var hTrailStep = Math.max(2.4, solidGapX * 0.16);
-		            var nextXSolid = xSolid + hTrailStep;
-		            if (targetXEnd - xEnd > 2) {
-		              nextXSolid = Math.min(nextXSolid, xEnd - 16);
-		            }
-		            xSolid = Math.max(xSolid, Math.min(targetXSolid, nextXSolid));
-		          } else {
-		            xSolid = targetXSolid;
-		          }
-		          if (xEnd < xSolid + 3) xEnd = xSolid + 3;
-
-		          if (!currentTail.hasAttribute('data-cb-stream-tail')) {
-		            currentTail.setAttribute('data-cb-stream-tail', 'horizontal');
-		          }
-		          currentTail.style.setProperty('--cb-tail-upper-h', upperH + 'px');
-		          currentTail.style.setProperty('--cb-tail-line-h', lineH + 'px');
-		          currentTail.style.setProperty('--cb-stream-x-solid', xSolid.toFixed(1) + 'px');
-		          currentTail.style.setProperty('--cb-stream-x-end', xEnd.toFixed(1) + 'px');
-		        }
-		      } else {
-		        xSolid = targetXSolid;
-		        xEnd = targetXEnd;
-		      }
-
-		      var settled = (targetYSolid - ySolid <= 0.5) && (targetXSolid - xSolid <= 0.5);
+		      var settled = (Math.abs(targetY - visualH) <= 0.5) && ((targetY + 8) - ySolid <= 0.5);
 		      if (!streamActive && settled) {
-		        // 流式已结束且最后一行尾韵已完全显影：卸载所有遮罩属性，恢复 100% 原生静止渲染
+		        // 流式已结束且大片逆向渐隐尾韵已完全显影：卸载所有遮罩与内联样式，恢复 100% 原生静止渲染
 		        resetAll();
 		        return;
 		      }
 
-		      if (!settled || dirty) {
+		      if (streamActive || !settled || dirty) {
 		        rafId = requestAnimationFrame(tick);
 		      }
 		    }
@@ -821,7 +737,7 @@ window.__ModuleLoader__.load({
 		  ctx.effect(function () {
 		    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
 
-		    var FLOAT_SELECTOR = '[data-menu-material="translucent"]:not(.cb-exit-ghost), [style*="--dsh-hover-preview-fade"]:not(.cb-exit-ghost), ._card_l6gf9_9:not(.cb-exit-ghost), .mR10tW_panel:not(.cb-exit-ghost), [class$="_panel"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal]):not(.cb-exit-ghost)';
+		    var FLOAT_SELECTOR = '[data-menu-material="translucent"]:not(.cb-exit-ghost), [style*="--dsh-hover-preview-fade"]:not(.cb-exit-ghost), ._card_l6gf9_9:not(.cb-exit-ghost), .mR10tW_panel:not(.cb-exit-ghost), [class$="_panel"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal]):not(.cb-exit-ghost), [class*="_panel_"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal]):not(.cb-exit-ghost)';
 		    var rectCache = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
 		    var hasActiveCards = false;
 		    var hoverSnapRaf = null;
@@ -831,7 +747,7 @@ window.__ModuleLoader__.load({
 		    function getDirection(el) {
 		      try {
 		        if (el.matches && el.matches('[style*="--dsh-hover-preview-fade"], ._card_l6gf9_9')) return 'hovercard';
-		        if (el.matches && el.matches('[data-anchor-side="top"], [data-trigger-menu], .htuFrW_menu, .m00Doa_card, [class*="_sideTop"], .mR10tW_panel, [class$="_panel"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal])')) return 'up';
+		        if (el.matches && el.matches('[data-anchor-side="top"], [data-trigger-menu], .htuFrW_menu, .m00Doa_card, [class*="_sideTop"], .mR10tW_panel, [class$="_panel"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal]), [class*="_panel_"][role="dialog"]:not([aria-modal="true"]):not([data-shortcut-modal])')) return 'up';
 		      } catch (_) {}
 		      return 'down';
 		    }
