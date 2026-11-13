@@ -65,7 +65,7 @@ dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-theme/rel
 - **UI 界面层（`--dsw-font-family`）**：`'Anthropic Sans Web', 'PingFang SC', -apple-system, ...` —— 几何感西文搭配温润圆润的苹方中文，微负字距（`-0.01em`）让词组凝聚扎实。
 - **正文阅读层**：`'Anthropic Serif Web', 'PingFang SC', serif` —— 对话正文采用板状衬线西文配苹方中文（若 DSH 未来版本更新内部 CSS Modules 哈希，则无害回落至 UI 字体栈）。
 - **代码与终端层（`--ds-font-family-code`）**：`'Sarasa Mono Slab SC', '等距更纱黑体 Slab SC', 'SF Mono', 'JetBrains Mono', ...` —— 严格 1:2 中西文等宽对齐。
-- **全局字号同步**：将侧栏与会话目录树接入官方 `--dsh-content-font-delta` 字号轴，调节字号时侧栏与正文同步缩放。
+- **全局字号与纵横等比例同步缩放（`--cb-scale`）**：将字号缩放比（`text / 14`）映射为 `body` 上的 `--cb-scale`，联动展开态左侧边栏列宽（`layout store` `setSidebar`）与行高/间距/内边距/图标，并同步缩放右侧正文内容区列宽（`--dsh-chat-content-width`）；保留 52px 顶栏红绿灯安全区与 56px 折叠态窄轨不变。
 
 > **字体前提说明**：插件仅声明 CSS 字体栈（不包含字体体积）。为获得最佳排版效果，建议安装上方 **[📦 字体包（Google Drive）](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC?usp=drive_link)**，即 **更纱黑体（`Sarasa Mono Slab SC` / `Sarasa-SuperTTC.ttc`）** 及 **Anthropic Sans / Serif Web** 字体；若未安装，系统将自动平滑回退至 macOS 原生 `PingFang SC`、`SF Mono` 等系统字体，不影响任何配色与布局功能。
 
@@ -80,7 +80,7 @@ dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-theme/rel
 
 ```sh
 npm run build               # 打包生成 lazy-CJS 格式的 dist/client.js 与 dist/index.js
-npm test                    # 运行 31 项自动化校验（Bundle 结构 / 66 个 token 形状 / 关键色值与声明）
+npm test                    # 运行 38 项自动化校验（Bundle 结构 / 76 个 token 形状 / 关键色值 / 纵横等比缩放）
 npm run install-desktop     # 符号链接注册进本机 ~/.dsh/profiles/desktop（供本地开发调试）
 ```
 

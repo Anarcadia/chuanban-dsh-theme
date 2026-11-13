@@ -155,7 +155,8 @@ window.__ModuleLoader__.load({
 		var GLOBAL_CSS = [
 		  '::selection { background: rgba(217, 119, 87, 0.25); }',
 		  // 微负字距（-0.01em）：西文词组凝聚成致密墨块带，强化「扎实沉稳」质感（对中文影响轻微）
-		  'body { -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }',
+		  // 同时在 body 声明默认 --cb-scale: 1 作为参数化等比缩放基数
+		  'body { --cb-scale: 1; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }',
 		  // darwin 平台特化层中和：桌面端 CSS 对侧栏列叠了 wash 渐变（#8f89b8 紫灰 /
 		  // #7a9bf0 蓝，0.2.2 起改由 sidebar-wash-*/sidebar-tint token 驱动，token 已置
 		  // transparent）+ 本规则 !important 双保险覆盖回暖纸目标色；sidebarCol 为 CSS
@@ -177,17 +178,38 @@ window.__ModuleLoader__.load({
 		  // 纯 CSS focus-within，零 JS、零轮询。
 		  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger) { --dsw-elevation-stroke-color: #A89F8E !important; box-shadow: 0 0 0 0.67px var(--dsw-elevation-stroke-color), 0 2px 10px 0 rgba(96, 76, 55, 0.05), 0 8px 28px 0 rgba(96, 76, 55, 0.06) !important; transition: box-shadow 0.18s var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)) !important; }',
 		  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger):focus-within { box-shadow: 0 0 0 0.67px #978D7A, 0 4px 18px 0 rgba(180, 118, 76, 0.10), 0 12px 44px 0 rgba(180, 118, 76, 0.16), 0 0 0 3px rgba(217, 119, 87, 0.10) !important; }',
-		  // 侧栏 + 会话列表字号跟随（asar 锚点 0.2.2-rc.3：kB3qhq = SidebarRoot，ui-sidebar）：
-		  // 官方字号轴只驱动主区 delta 体系，侧栏根与「新建会话」写死 14px；接入官方
-		  // delta 惯用法（默认字号时 delta=0 观感与原生一致，调大时全体同步）。
+		  // 左右纵横双向等比例同步缩放（方案一：原生参数化 --cb-scale 引擎）
+		  // ---------------------------------------------------------------------------
 		  // 整页布局级缩放不走 CSS zoom（弹层库 rect 视觉坐标与 style.top 布局单位
-		  // 错乘，结构性错位），改由 --force-device-scale-factor 启动开关承担（见 README）。
+		  // 错乘，结构性错位）。本组规则保留 52px 顶栏红绿灯安全区（topStrip）与
+		  // 56px 折叠态窄轨（collapsed/rail），仅对展开态侧栏、目录树行距、图标、
+		  // 设置触发器与右侧对话正文列宽进行纵横同步等比缩放（锚点：DSH 0.2.2-rc.3）：
+		  '.kB3qhq_root { --dsh-sidebar-inline-padding: calc(8px * var(--cb-scale, 1)) !important; --dsh-sidebar-row-padding: calc(12px * var(--cb-scale, 1)) !important; --dsh-sidebar-label-gap: calc(6px * var(--cb-scale, 1)) !important; }',
 		  '.kB3qhq_root, .kB3qhq_newSession { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; }',
-		  // 会话目录树行（asar 锚点 0.2.2-rc.3：JoiKIa，自 ui-session 迁至 ui-workspace）：
-		  // 标题类显式写死 14px 覆盖继承，故侧栏根跟随对它无效；同样接入官方 delta。
-		  // 小字（时间戳等 12/13px）按官方缩放契约「Small typography keeps fixed sizes」
-		  // 保持固定。
-		  '.JoiKIa_title, .JoiKIa_renameInput, .JoiKIa_searchResultTitle, .JoiKIa_hoverTitle { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; }'
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_logoRow { height: calc(60px * var(--cb-scale, 1)) !important; padding: calc(8px * var(--cb-scale, 1)) 0 calc(8px * var(--cb-scale, 1)) calc(8px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_brandName { font-size: calc(18px * var(--cb-scale, 1)) !important; line-height: calc(24px * var(--cb-scale, 1)) !important; height: calc(24px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_fallbackBrandName { font-size: calc(17px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession { height: calc(38px * var(--cb-scale, 1)) !important; padding: calc(8px * var(--cb-scale, 1)) calc(12px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelList { gap: calc(2px * var(--cb-scale, 1)) !important; margin-bottom: calc(8px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelRow { min-height: calc(32px * var(--cb-scale, 1)) !important; padding-block: calc(5px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
+		  '.kB3qhq_panelUnpin { top: calc((32px * var(--cb-scale, 1) - 28px) / 2) !important; }',
+		  '.Kjh-qa_root:not(.Kjh-qa_rail) { --workspace-toolbar-height: calc(36px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_sectionLabel { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; line-height: calc(20px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_searchExpanded { height: calc(32px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_searchInput { font-size: calc(13px * var(--cb-scale, 1)) !important; line-height: calc(18px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_flatList > * + *, .Kjh-qa_searchTree > [role="treeitem"] + [role="treeitem"], .Kjh-qa_groupSection > * + * { margin-top: calc(2px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_groupSection + .Kjh-qa_groupSection { margin-top: calc(4px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_projectRow, .JoiKIa_sessionRow { height: calc(32px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_title, .JoiKIa_renameInput, .JoiKIa_searchResultTitle, .JoiKIa_hoverTitle { font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; line-height: calc(20px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_slot { width: calc(16px * var(--cb-scale, 1)) !important; height: calc(20px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_slot svg, .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelGlyph svg, .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSessionContent > svg, ._77Pn0W_trigger:not(._77Pn0W_rail) svg { transform: scale(var(--cb-scale, 1)); transform-origin: center; }',
+		  '.JoiKIa_time { font-size: calc(10px * var(--cb-scale, 1)) !important; line-height: calc(16px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_meta, .JoiKIa_searchResultWorkspace, .JoiKIa_searchResultSnippet, .Kjh-qa_sessionOverflowButton { font-size: calc(12px * var(--cb-scale, 1)) !important; line-height: calc(18px * var(--cb-scale, 1)) !important; }',
+		  '.Kjh-qa_sessionOverflowButton { height: calc(28px * var(--cb-scale, 1)) !important; }',
+		  '.JoiKIa_searchResultRow { min-height: calc(48px * var(--cb-scale, 1)) !important; padding-block: calc(4px * var(--cb-scale, 1)) !important; }',
+		  '._77Pn0W_trigger:not(._77Pn0W_rail) { height: calc(42px * var(--cb-scale, 1)) !important; font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
+		  // 右侧主对话区横向内容列宽同步缩放（保留用户手动拖拽 --dsh-chat-user-width 优先级）
+		  '.kiGsTW_body { --dsh-chat-content-width: var(--dsh-chat-user-width, min(calc(var(--dsh-conversation-column-width, 100vw) - 64px), clamp(calc(680px * var(--cb-scale, 1)), calc(var(--dsh-conversation-column-width, 0px) * 0.64 * var(--cb-scale, 1)), calc(920px * var(--cb-scale, 1))))) !important; }'
 		].join('\n');
 
 		var PLUGIN_ID = 'chuanban-dsh-theme';
@@ -209,6 +231,132 @@ window.__ModuleLoader__.load({
 		    document.head.appendChild(tag);
 		    return function () { tag.remove(); };
 		  }, PLUGIN_ID + ': global css');
+
+		  // 纵横双向等比缩放联动：将字号缩放比（text / 14）映射为 body 上的 --cb-scale，
+		  // 并在字号变化时按同比例联动左侧边栏列宽（layout store setSidebar，受 264..420 安全夹逼保护）。
+		  ctx.effect(function () {
+		    if (typeof document === 'undefined') return;
+		    var BASE_TEXT_SIZE = 14;
+		    var DEFAULT_SIDEBAR_WIDTH = 280;
+
+		    function getTextSize(snapshot) {
+		      var s = snapshot && snapshot.fontSizes && snapshot.fontSizes.text;
+		      return typeof s === 'number' && s > 0 ? s : BASE_TEXT_SIZE;
+		    }
+
+		    function writeScale(textSize) {
+		      var scale = Number((textSize / BASE_TEXT_SIZE).toFixed(4));
+		      document.body.style.setProperty('--cb-scale', String(scale));
+		      return scale;
+		    }
+
+		    function getSlotsService(targetCtx) {
+		      var c = targetCtx || ctx;
+		      try {
+		        if (c && typeof c.get === 'function') {
+		          var s = c.get('slots', false);
+		          if (s) return s;
+		        }
+		        if (c && c.reflect && typeof c.reflect.get === 'function') {
+		          var rs = c.reflect.get('slots', false);
+		          if (rs) return rs;
+		        }
+		        return c && c.slots ? c.slots : null;
+		      } catch (_) {
+		        return null;
+		      }
+		    }
+
+		    function getLayoutStore(targetCtx) {
+		      try {
+		        var slots = getSlotsService(targetCtx);
+		        var entries = slots && typeof slots.entries === 'function' ? slots.entries('root') : null;
+		        var entry = entries && entries[0];
+		        var storeHandle = entry && (entry.store || (entry.options && entry.options.store));
+		        return storeHandle && typeof storeHandle.create === 'function' ? storeHandle.create() : null;
+		      } catch (_) {
+		        return null;
+		      }
+		    }
+
+		    var prevTextSize = getTextSize(ctx.theme && typeof ctx.theme.getTheme === 'function' ? ctx.theme.getTheme() : null);
+		    var initialScale = writeScale(prevTextSize);
+
+		    // 若启动时字号非默认 14px（例如用户配置为 17px），在 root 布局 store 就绪时按初始比例同步默认侧栏宽度
+		    var offSlots = null;
+		    var offInject = null;
+		    if (prevTextSize !== BASE_TEXT_SIZE) {
+		      var syncInitialSidebar = function (targetCtx) {
+		        try {
+		          var store = getLayoutStore(targetCtx);
+		          if (!store || !store.getSnapshot || !store.actions || typeof store.actions.setSidebar !== 'function') return false;
+		          var snap = store.getSnapshot();
+		          var current = snap && snap.layoutInfo && snap.layoutInfo.sidebar;
+		          if (current === DEFAULT_SIDEBAR_WIDTH) {
+		            store.actions.setSidebar(Math.round(DEFAULT_SIDEBAR_WIDTH * initialScale));
+		          }
+		          return true;
+		        } catch (_) {
+		          return false;
+		        }
+		      };
+
+		      var attachSlotsWatcher = function (targetCtx) {
+		        if (syncInitialSidebar(targetCtx)) return;
+		        var slots = getSlotsService(targetCtx);
+		        if (slots && typeof slots.subscribe === 'function' && !offSlots) {
+		          try {
+		            offSlots = slots.subscribe('root', function () {
+		              if (syncInitialSidebar(targetCtx) && offSlots) {
+		                offSlots();
+		                offSlots = null;
+		              }
+		            });
+		          } catch (_) {}
+		        }
+		      };
+
+		      attachSlotsWatcher(ctx);
+		      if (!offSlots && typeof ctx.inject === 'function') {
+		        try {
+		          var sub = ctx.inject(['slots'], function (slotsCtx) {
+		            attachSlotsWatcher(slotsCtx);
+		          });
+		          if (sub && typeof sub.dispose === 'function') {
+		            offInject = function () { sub.dispose(); };
+		          } else if (typeof sub === 'function') {
+		            offInject = sub;
+		          }
+		        } catch (_) {}
+		      }
+		    }
+
+		    var offTheme = typeof ctx.on === 'function'
+		      ? ctx.on('theme/change', function (snapshot) {
+		          var nextTextSize = getTextSize(snapshot);
+		          writeScale(nextTextSize);
+		          if (nextTextSize !== prevTextSize) {
+		            var ratio = nextTextSize / prevTextSize;
+		            prevTextSize = nextTextSize;
+		            var store = getLayoutStore(ctx);
+		            if (store && store.getSnapshot && store.actions && typeof store.actions.setSidebar === 'function') {
+		              var snap = store.getSnapshot();
+		              var currentSidebar = snap && snap.layoutInfo && snap.layoutInfo.sidebar;
+		              if (typeof currentSidebar === 'number' && currentSidebar > 0) {
+		                store.actions.setSidebar(Math.round(currentSidebar * ratio));
+		              }
+		            }
+		          }
+		        })
+		      : null;
+
+		    return function () {
+		      if (offSlots) { try { offSlots(); } catch (_) {} offSlots = null; }
+		      if (offInject) { try { offInject(); } catch (_) {} offInject = null; }
+		      if (offTheme) { try { offTheme(); } catch (_) {} offTheme = null; }
+		      document.body.style.removeProperty('--cb-scale');
+		    };
+		  }, PLUGIN_ID + ': proportional scale sync');
 		}
 
 		exports.apply = apply;

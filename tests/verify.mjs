@@ -78,5 +78,116 @@ ok('v0.1.1 已删 0.2.2 无消费者 token（tip / markdown-placeholder / brand-
 ok('CSS zoom 方案已撤（弹层结构性错位，全局缩放交启动开关）', !skinSrc.includes('style.zoom'));
 ok('输入框初始暖晕 + 聚焦增强动效（focus-within + 0.18s transition）', skinSrc.includes(':focus-within') && skinSrc.includes('transition: box-shadow 0.18s'));
 
+console.log('[5] 方案一：左右纵横双向等比例同步缩放（--cb-scale + layout store 联动）');
+ok('GLOBAL_CSS 包含纵向参数化规则（JoiKIa_sessionRow / kB3qhq_panelRow / _77Pn0W_trigger / Kjh-qa_root）',
+  skinSrc.includes('.JoiKIa_projectRow, .JoiKIa_sessionRow { height: calc(32px * var(--cb-scale, 1))') &&
+  skinSrc.includes('.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelRow') &&
+  skinSrc.includes('._77Pn0W_trigger:not(._77Pn0W_rail) { height: calc(42px * var(--cb-scale, 1))') &&
+  skinSrc.includes('.Kjh-qa_root:not(.Kjh-qa_rail) { --workspace-toolbar-height: calc(36px * var(--cb-scale, 1))'));
+ok('GLOBAL_CSS 包含右侧正文列宽同步缩放规则（.kiGsTW_body / --dsh-chat-content-width）',
+  skinSrc.includes('.kiGsTW_body { --dsh-chat-content-width: var(--dsh-chat-user-width'));
+
+// 模拟 apply(ctx) 运行态：验证 --cb-scale 初始化、theme/change 联动与 setSidebar 按比例调用、以及 disposer 清理
+{
+  const bodyProps = new Map();
+  const prevDoc = globalThis.document;
+  globalThis.document = {
+    head: { appendChild() {} },
+    createElement() { return { dataset: {}, textContent: '', remove() {} }; },
+    body: {
+      style: {
+        setProperty(k, v) { bodyProps.set(k, v); },
+        getPropertyValue(k) { return bodyProps.get(k) || ''; },
+        removeProperty(k) { bodyProps.delete(k); },
+      },
+    },
+  };
+  try {
+    let sidebarWidth = 280;
+    const setSidebarCalls = [];
+    const mockStore = {
+      getSnapshot: () => ({ layoutInfo: { sidebar: sidebarWidth } }),
+      actions: {
+        setSidebar(px) {
+          sidebarWidth = px;
+          setSidebarCalls.push(px);
+        },
+      },
+    };
+    const listeners = new Map();
+    const disposers = [];
+    const mockCtx = {
+      theme: {
+        overrideTokens: () => () => {},
+        getTheme: () => ({ fontSizes: { text: 14 } }),
+      },
+      slots: {
+        entries: (name) => name === 'root' ? [{ options: { store: { create: () => mockStore } } }] : [],
+        subscribe: () => () => {},
+      },
+      on(ev, cb) {
+        listeners.set(ev, cb);
+        return () => listeners.delete(ev);
+      },
+      effect(fn) {
+        const d = fn();
+        if (typeof d === 'function') disposers.push(d);
+      },
+    };
+    mod.exports.apply(mockCtx);
+    ok('apply(ctx) 初始字号 14px 时 --cb-scale = 1', globalThis.document.body.style.getPropertyValue('--cb-scale') === '1');
+    const onThemeChange = listeners.get('theme/change');
+    onThemeChange({ fontSizes: { text: 16 } });
+    ok('theme/change (14 -> 16) 更新 --cb-scale = 1.1429 且按比例调整 sidebar=320',
+      globalThis.document.body.style.getPropertyValue('--cb-scale') === '1.1429' &&
+      setSidebarCalls.length === 1 && setSidebarCalls[0] === 320);
+    for (const d of disposers) d();
+    ok('disposer 清理后移除 body 上的 --cb-scale', globalThis.document.body.style.getPropertyValue('--cb-scale') === '');
+
+    // 回归验证：真实 Cordis Proxy 下未 inject slots 时访问 ctx.slots 会抛错，且 StoredEntry.store 位于顶层
+    let sidebar17 = 280;
+    const setSidebar17Calls = [];
+    const mockStore17 = {
+      getSnapshot: () => ({ layoutInfo: { sidebar: sidebar17 } }),
+      actions: {
+        setSidebar(px) {
+          sidebar17 = px;
+          setSidebar17Calls.push(px);
+        },
+      },
+    };
+    const cordisSlots = {
+      entries: (name) => name === 'root' ? [{ store: { create: () => mockStore17 }, options: {} }] : [],
+      subscribe: () => () => {},
+    };
+    const cordisDisposers = [];
+    const cordisCtx = {
+      theme: {
+        overrideTokens: () => () => {},
+        getTheme: () => ({ fontSizes: { text: 17 } }),
+      },
+      get slots() {
+        throw new Error('cannot get property "slots" without inject');
+      },
+      get(name) {
+        return name === 'slots' ? cordisSlots : undefined;
+      },
+      on() { return () => {}; },
+      effect(fn) {
+        const d = fn();
+        if (typeof d === 'function') cordisDisposers.push(d);
+      },
+    };
+    mod.exports.apply(cordisCtx);
+    ok('Cordis Proxy 防护（17px 启动 + ctx.slots 抛错 + entry.store）：未抛异常且 --cb-scale=1.2143，setSidebar(340)',
+      globalThis.document.body.style.getPropertyValue('--cb-scale') === '1.2143' &&
+      setSidebar17Calls.length === 1 && setSidebar17Calls[0] === 340);
+    for (const d of cordisDisposers) d();
+  } finally {
+    if (prevDoc === undefined) delete globalThis.document;
+    else globalThis.document = prevDoc;
+  }
+}
+
 console.log(fail === 0 ? '\n全部 ' + pass + ' 项通过' : '\n' + fail + ' 项失败');
 process.exit(fail === 0 ? 0 : 1);
