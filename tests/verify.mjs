@@ -205,7 +205,40 @@ ok('GLOBAL_CSS 含 .kB3qhq_newSession 新建会话分层与选中行加深', ski
 ok('GLOBAL_CSS 含 md-code-block 代码块边框与顶栏', skinSrc.includes('md-code-block'));
 ok('GLOBAL_CSS 含 [data-expandable] 工具折叠行 hover/active 变色', skinSrc.includes('[data-expandable]'));
 ok('GLOBAL_CSS 含 [class*="_bubble_"]:not([role="tooltip"]) 排除 Tooltip 气泡边线', skinSrc.includes('[class*="_bubble_"]:not([role="tooltip"])'));
-ok('零 MutationObserver / setInterval 运行时开销', !skinSrc.includes('MutationObserver') && !skinSrc.includes('setInterval'));
+ok('零 setInterval 轮询运行时开销（流式监听采用单个 rAF 节流 MutationObserver）', !skinSrc.includes('setInterval') && skinSrc.includes('requestAnimationFrame'));
+
+console.log('[7] Phase C：流式状态栏 Claude 橙色系、鲸鱼慢速大幅摇摆与流式渐变浮现');
+ok('--dsw-alias-label-deep-diving = #CE6846', tokens['--dsw-alias-label-deep-diving']?.light === '#CE6846');
+ok('--dsw-alias-label-deep-diving-shimmer = #F4B293', tokens['--dsw-alias-label-deep-diving-shimmer']?.light === '#F4B293');
+ok('--dsw-alias-label-shimmer = rgba(217, 119, 87, 0.42)', tokens['--dsw-alias-label-shimmer']?.light === 'rgba(217, 119, 87, 0.42)');
+ok('GLOBAL_CSS 含流式状态栏橙色加固规则（[data-chat-running] / .tnXGgG_running）',
+  skinSrc.includes('[data-chat-running]') && skinSrc.includes('.tnXGgG_running') && skinSrc.includes('#CE6846'));
+ok('GLOBAL_CSS 含鲸鱼矢量大幅慢速摆动（cb-whale-slow-swing 3.2s / 43% 86% / ±22deg）',
+  skinSrc.includes('cb-whale-slow-swing') && skinSrc.includes('3.2s') && skinSrc.includes('43% 86%') && skinSrc.includes('rotate(-22deg)'));
+ok('GLOBAL_CSS 含关闭 APNG 动画与解容器裁切规则（display: none / overflow: visible）',
+  skinSrc.includes('runningWhaleAnimated') && skinSrc.includes('overflow: visible'));
+ok('GLOBAL_CSS 含流式 CSS @property 与渐变遮罩规则（--cb-reveal-x / --cb-line-alpha / cb-stream-line-emerge）',
+  skinSrc.includes('@property --cb-reveal-x') && skinSrc.includes('@property --cb-line-alpha') && skinSrc.includes('cb-stream-line-emerge'));
+ok('GLOBAL_CSS 含流式双模遮罩属性（data-cb-stream-tail="horizontal" / data-cb-stream-tail="line"）',
+  skinSrc.includes('[data-cb-stream-tail="horizontal"]') && skinSrc.includes('[data-cb-stream-tail="line"]'));
+ok('apply(ctx) 包含流式渐变浮现 effect（streaming gradient reveal + rAF 节流 + createRange 零 DOM 篡改）',
+  skinSrc.includes('streaming gradient reveal') && skinSrc.includes('createRange') && skinSrc.includes('requestAnimationFrame') && skinSrc.includes('MutationObserver'));
+
+console.log('[8] Phase D：浮现卡片与上拉/下拉菜单渐变出现与消失动效');
+ok('GLOBAL_CSS 含透明毛玻璃底衬层中和（[data-menu-backing] opacity: 0）',
+  skinSrc.includes('[data-menu-backing]') && skinSrc.includes('opacity: 0 !important'));
+ok('GLOBAL_CSS 含 cb-popup-enter-up / cb-popup-enter-down 入场关键帧',
+  skinSrc.includes('@keyframes cb-popup-enter-up') && skinSrc.includes('@keyframes cb-popup-enter-down'));
+ok('GLOBAL_CSS 含 cb-popup-exit-up / cb-popup-exit-down 退场关键帧',
+  skinSrc.includes('@keyframes cb-popup-exit-up') && skinSrc.includes('@keyframes cb-popup-exit-down'));
+ok('GLOBAL_CSS 含 cb-hovercard-enter / cb-hovercard-exit 侧栏预览卡关键帧',
+  skinSrc.includes('@keyframes cb-hovercard-enter') && skinSrc.includes('@keyframes cb-hovercard-exit'));
+ok('GLOBAL_CSS 声明轻快动效时长（185ms 进入 / 145ms 退出 / 195ms HoverCard）',
+  skinSrc.includes('185ms') && skinSrc.includes('145ms') && skinSrc.includes('195ms'));
+ok('GLOBAL_CSS 包含 .cb-exit-ghost 离场残影容器规则（fixed / pointer-events: none）',
+  skinSrc.includes('.cb-exit-ghost') && skinSrc.includes('position: fixed !important') && skinSrc.includes('pointer-events: none !important'));
+ok('apply(ctx) 包含浮层离场残影 effect（floating card exit transition + WeakMap + sanitizeGhost）',
+  skinSrc.includes('floating card exit transition') && skinSrc.includes('FLOAT_SELECTOR') && skinSrc.includes('WeakMap') && skinSrc.includes('sanitizeGhost'));
 
 console.log(fail === 0 ? '\n全部 ' + pass + ' 项通过' : '\n' + fail + ' 项失败');
 process.exit(fail === 0 ? 0 : 1);

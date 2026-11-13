@@ -72,6 +72,9 @@ var TOKENS = {
   '--dsw-alias-state-business-primary': pair('#D97757'),
   '--dsw-alias-state-business-tertiary': pair('#F3DDD3'),
   '--dsw-alias-link': pair('#C4633F'),
+  '--dsw-alias-label-deep-diving': pair('#CE6846'),
+  '--dsw-alias-label-deep-diving-shimmer': pair('#F4B293'),
+  '--dsw-alias-label-shimmer': pair('rgba(217, 119, 87, 0.42)'),
 
   // 文字（深炭压实：功能性小字（模型 ID/「完全权限」等）对齐主文字深度段，
   // 层级靠字号区分而非变灰——Claude Desktop 原生做法；像素实测两轮 #6 段灰
@@ -239,7 +242,62 @@ var GLOBAL_CSS = [
 
   // 模块 5：分段控制器滑块与用户消息气泡实体边线
   '[class*="_control_"] > [class*="_indicator_"], [class*="_tabs_"] > [class*="_indicator_"] { background: #FFFFFF !important; box-shadow: 0 0 0 0.5px #CFC8B8, 0 1px 3px rgba(44, 43, 41, 0.08) !important; }',
-  '[class*="_bubble_"]:not([role="tooltip"]) { border: 0.5px solid #E2DACB !important; box-shadow: 0 1px 2px rgba(44, 43, 41, 0.03) !important; }'
+  '[class*="_bubble_"]:not([role="tooltip"]) { border: 0.5px solid #E2DACB !important; box-shadow: 0 1px 2px rgba(44, 43, 41, 0.03) !important; }',
+
+  // Phase C：流式状态栏 Claude 橙色系、摆动鲸鱼大幅慢速摇摆与流式渐变浮现
+  // 1. 流式状态栏橙色加固
+  '[data-chat-running], .tnXGgG_running, [class$="_running"] { --dsw-alias-label-deep-diving: #CE6846 !important; --dsw-alias-label-deep-diving-shimmer: #F4B293 !important; --dsw-alias-label-shimmer: #F4B293 !important; color: #CE6846 !important; }',
+
+  // 2. 摆动鲸鱼：关闭 APNG 解码、解除容器裁切，以 43% 86% 为轴心施加 GPU 慢速大幅摆动
+  '.tnXGgG_runningWhaleAnimated, [data-chat-running] [class$="_runningWhaleAnimated"] { display: none !important; mask: none !important; -webkit-mask: none !important; }',
+  '.tnXGgG_runningIcon, [data-chat-running] [class$="_runningIcon"] { contain: layout style !important; overflow: visible !important; }',
+  '.tnXGgG_runningWhaleStill, [data-chat-running] [class$="_runningWhaleStill"] { display: block !important; transform-origin: 43% 86% !important; will-change: transform; animation: cb-whale-slow-swing 3.2s cubic-bezier(0.42, 0, 0.58, 1) infinite !important; }',
+  '[data-chat-running][data-holding] .tnXGgG_runningWhaleStill, [data-chat-running][data-holding] [class$="_runningWhaleStill"] { animation-play-state: paused !important; }',
+  '@keyframes cb-whale-slow-swing { 0%, 100% { transform: translateY(0.3px) rotate(-22deg); } 50% { transform: translateY(-0.5px) rotate(22deg); } }',
+  '@media (prefers-reduced-motion: reduce) { .tnXGgG_runningWhaleStill, [data-chat-running] [class$="_runningWhaleStill"] { animation: none !important; } }',
+
+  // 3. 流式出字渐变浮现双模规则（CSS @property + 逐行新行入场关键帧 + 双层遮罩羽化）
+  '@property --cb-reveal-x { syntax: \'<length>\'; inherits: false; initial-value: 2000px; }',
+  '@property --cb-line-alpha { syntax: \'<number>\'; inherits: false; initial-value: 1; }',
+  '@keyframes cb-stream-line-emerge { 0% { opacity: 0; transform: translateY(2.5px); } 100% { opacity: 1; transform: translateY(0); } }',
+  '[data-streaming] :is([class*="_markdown_"], [class$="_markdown"]) :is(p, li, h1, h2, h3, h4, h5, h6, blockquote, pre, tr, hr, [class*="_fenceSeat_"], [class$="_fenceSeat"], [class*="_tableScroll_"], [class$="_tableScroll"]), [data-variant="think"][data-state="running"] :is([class*="_markdown_"], [class$="_markdown"]) :is(p, li, h1, h2, h3, h4, h5, h6, blockquote, pre, tr), [data-streaming] pre .line { animation: cb-stream-line-emerge 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }',
+  '[data-cb-stream-tail="horizontal"] { -webkit-mask-image: linear-gradient(180deg, #000 0px, #000 calc(100% - var(--cb-line-h, 28px)), transparent calc(100% - var(--cb-line-h, 28px))), linear-gradient(90deg, #000 0px, #000 calc(var(--cb-reveal-x, 2000px) - 72px), rgba(0, 0, 0, 0.45) calc(var(--cb-reveal-x, 2000px) - 28px), transparent var(--cb-reveal-x, 2000px)); mask-image: linear-gradient(180deg, #000 0px, #000 calc(100% - var(--cb-line-h, 28px)), transparent calc(100% - var(--cb-line-h, 28px))), linear-gradient(90deg, #000 0px, #000 calc(var(--cb-reveal-x, 2000px) - 72px), rgba(0, 0, 0, 0.45) calc(var(--cb-reveal-x, 2000px) - 28px), transparent var(--cb-reveal-x, 2000px)); -webkit-mask-size: 100% 100%, 100% var(--cb-line-h, 28px); mask-size: 100% 100%, 100% var(--cb-line-h, 28px); -webkit-mask-position: 0 0, 0 100%; mask-position: 0 0, 0 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; transition: --cb-reveal-x 0.21s cubic-bezier(0.22, 1, 0.36, 1); }',
+  '[data-cb-stream-tail="line"] { -webkit-mask-image: linear-gradient(180deg, #000 0px, #000 calc(100% - var(--cb-line-h, 28px)), rgba(0, 0, 0, var(--cb-line-alpha, 1)) calc(100% - var(--cb-line-h, 28px) * 0.45), rgba(0, 0, 0, var(--cb-line-alpha, 1)) 100%); mask-image: linear-gradient(180deg, #000 0px, #000 calc(100% - var(--cb-line-h, 28px)), rgba(0, 0, 0, var(--cb-line-alpha, 1)) calc(100% - var(--cb-line-h, 28px) * 0.45), rgba(0, 0, 0, var(--cb-line-alpha, 1)) 100%); transition: --cb-line-alpha 0.24s cubic-bezier(0.22, 1, 0.36, 1); }',
+
+  // Phase D：浮现卡片（HoverCard）、上拉/下拉菜单与 Tooltip 渐变出现与消失质感
+  // 1. 隐藏 macOS 透明毛玻璃底衬层（避免纯白菜单缩放时边缘露出未缩放底衬）
+  '[data-menu-backing] { opacity: 0 !important; pointer-events: none !important; }',
+
+  // 2. 定义出现与消失关键帧
+  '@keyframes cb-popup-enter-up { 0% { opacity: 0; transform: translateY(5px) scale(0.975); } 100% { opacity: 1; transform: translateY(0) scale(1); } }',
+  '@keyframes cb-popup-enter-down { 0% { opacity: 0; transform: translateY(-4px) scale(0.975); } 100% { opacity: 1; transform: translateY(0) scale(1); } }',
+  '@keyframes cb-hovercard-enter { 0% { opacity: 0; transform: translateX(-4px) translateY(2px) scale(0.98); } 100% { opacity: 1; transform: translateX(0) translateY(0) scale(1); } }',
+  '@keyframes cb-popup-exit-up { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(4px) scale(0.98); } }',
+  '@keyframes cb-popup-exit-down { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-3px) scale(0.98); } }',
+  '@keyframes cb-hovercard-exit { 0% { opacity: 1; transform: translateX(0) translateY(0) scale(1); } 100% { opacity: 0; transform: translateX(-3px) translateY(1px) scale(0.982); } }',
+
+  // 3. 默认下拉 / 右键 / 子菜单卡片（185ms 渐变进入）
+  '[data-menu-material="translucent"]:not(.cb-exit-ghost) { --dsh-menu-enter: 185ms !important; --dsh-menu-dismiss: 145ms !important; transform-origin: center top; animation: cb-popup-enter-down 185ms cubic-bezier(0.16, 1, 0.3, 1) both !important; will-change: transform, opacity; }',
+
+  // 4. 上拉卡片（底部权限选择、模型选择、指令弹窗、用量统计等）
+  '[data-menu-material="translucent"][data-anchor-side="top"]:not(.cb-exit-ghost), [data-menu-material="translucent"].htuFrW_menu:not(.cb-exit-ghost), [data-menu-material="translucent"].m00Doa_card:not(.cb-exit-ghost), [data-menu-material="translucent"][class*="_sideTop"]:not(.cb-exit-ghost), .mR10tW_panel:not(.cb-exit-ghost), [class$="_panel"][role="dialog"]:not(.cb-exit-ghost) { transform-origin: center bottom !important; animation: cb-popup-enter-up 185ms cubic-bezier(0.16, 1, 0.3, 1) both !important; will-change: transform, opacity; }',
+
+  // 5. 解决 MenuSurface 原版对子元素的重复动画叠加与原生 dismiss 动画
+  '[data-menu-material="translucent"][data-menu-phase="enter"] > * { animation: none !important; }',
+  '[data-menu-material="translucent"][data-menu-phase="dismiss"] { animation: cb-popup-exit-down 145ms cubic-bezier(0.32, 0, 0.2, 1) both !important; pointer-events: none !important; }',
+  '[data-menu-material="translucent"][data-menu-phase="dismiss"] > * { animation: none !important; }',
+
+  // 6. 浮现预览卡片 HoverCard 与 Tooltip
+  '[style*="--dsh-hover-preview-fade"]:not(.cb-exit-ghost), ._card_l6gf9_9:not(.cb-exit-ghost) { --dsh-hover-preview-fade: 150ms !important; transform-origin: left center; animation: cb-hovercard-enter 195ms cubic-bezier(0.16, 1, 0.3, 1) both !important; will-change: transform, opacity; }',
+  '[style*="--dsh-hover-preview-fade"][data-closing], ._card_l6gf9_9[data-closing] { animation: cb-hovercard-exit 145ms cubic-bezier(0.32, 0, 0.2, 1) both !important; pointer-events: none !important; }',
+  '[role="tooltip"]:not(.cb-exit-ghost) { animation-duration: 175ms !important; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important; }',
+
+  // 7. 离场残影容器（.cb-exit-ghost）样式
+  '.cb-exit-ghost { position: fixed !important; inset: auto !important; right: auto !important; bottom: auto !important; margin: 0 !important; pointer-events: none !important; user-select: none !important; z-index: 1150 !important; will-change: transform, opacity !important; }',
+  '.cb-exit-ghost[data-cb-exit-dir="up"] { transform-origin: center bottom !important; animation: cb-popup-exit-up 145ms cubic-bezier(0.32, 0, 0.2, 1) both !important; }',
+  '.cb-exit-ghost[data-cb-exit-dir="down"] { transform-origin: center top !important; animation: cb-popup-exit-down 145ms cubic-bezier(0.32, 0, 0.2, 1) both !important; }',
+  '.cb-exit-ghost[data-cb-exit-dir="hovercard"] { transform-origin: left center !important; animation: cb-hovercard-exit 145ms cubic-bezier(0.32, 0, 0.2, 1) both !important; }',
+  '@media (prefers-reduced-motion: reduce) { [data-menu-material="translucent"], [style*="--dsh-hover-preview-fade"], ._card_l6gf9_9, .mR10tW_panel, .cb-exit-ghost { animation-duration: 0ms !important; } }'
 ].join('\n');
 
 var PLUGIN_ID = 'chuanban-dsh-theme';
@@ -387,6 +445,351 @@ function apply(ctx) {
       document.body.style.removeProperty('--cb-scale');
     };
   }, PLUGIN_ID + ': proportional scale sync');
+
+  // 流式出字双模渐变浮现（慢速左右推进 / 快速逐行浮现，纯 CSS @property + 零节点篡改 rAF 节流）
+  ctx.effect(function () {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
+
+    var rafId = null;
+    var settleTimer = null;
+    var activeBlock = null;
+    var prevBlock = null;
+    var prevTextLen = 0;
+    var prevHeight = 0;
+    var prevLineTop = 0;
+    var prevTargetX = 0;
+
+    function cleanupBlock(el) {
+      if (!el) return;
+      try {
+        el.removeAttribute('data-cb-stream-tail');
+        el.style.removeProperty('--cb-reveal-x');
+        el.style.removeProperty('--cb-line-alpha');
+        el.style.removeProperty('--cb-line-h');
+        el.style.removeProperty('transition');
+      } catch (_) {}
+    }
+
+    function onFrame() {
+      rafId = null;
+      var containers = document.querySelectorAll('[data-streaming], [data-variant="think"][data-state="running"]');
+      if (!containers || containers.length === 0) {
+        if (activeBlock) {
+          cleanupBlock(activeBlock);
+          activeBlock = null;
+          prevBlock = null;
+        }
+        return;
+      }
+
+      var lastContainer = containers[containers.length - 1];
+      var mdRoots = lastContainer.querySelectorAll('[class*="_markdown_"], [class$="_markdown"]');
+      var mdRoot = mdRoots.length > 0 ? mdRoots[mdRoots.length - 1] : lastContainer;
+
+      var candidateBlocks = mdRoot.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6');
+      if (!candidateBlocks || candidateBlocks.length === 0) return;
+
+      var tailBlock = candidateBlocks[candidateBlocks.length - 1];
+      if (tailBlock.matches && tailBlock.matches('li')) {
+        var sub = tailBlock.querySelectorAll('p, li');
+        if (sub.length > 0) tailBlock = sub[sub.length - 1];
+      }
+
+      var textContent = tailBlock.textContent || '';
+      var textLen = textContent.length;
+      if (textLen === 0) return;
+
+      // 若尾块未变且字符数未增加（例如仅底部秒表跳字或悬停交互触发 DOM 变更），零开销跳过
+      if (prevBlock === tailBlock && textLen === prevTextLen) return;
+
+      if (activeBlock && activeBlock !== tailBlock) {
+        cleanupBlock(activeBlock);
+      }
+      activeBlock = tailBlock;
+
+      try {
+        var range = document.createRange();
+        range.selectNodeContents(tailBlock);
+        range.collapse(false);
+        var caretRects = range.getClientRects();
+        var caretRect = caretRects && caretRects.length > 0 ? caretRects[caretRects.length - 1] : range.getBoundingClientRect();
+        var blockRect = tailBlock.getBoundingClientRect();
+        var caretRight = (caretRect && typeof caretRect.right === 'number') ? caretRect.right : (blockRect ? blockRect.right : 0);
+        var caretTop = (caretRect && typeof caretRect.top === 'number') ? caretRect.top : (blockRect ? blockRect.top : 0);
+        var targetX = Math.max(24, Math.round(caretRight - (blockRect ? blockRect.left : 0)));
+
+        var deltaChars = (prevBlock === tailBlock) ? (textLen - prevTextLen) : textLen;
+        var lineWrapped = (prevBlock === tailBlock) && (blockRect.height - prevHeight > 10 || Math.abs(caretTop - prevLineTop) > 8);
+
+        if (lineWrapped || deltaChars >= 18 || (prevBlock !== tailBlock && blockRect.height > 34)) {
+          // 快速流式或刚折行：一行一行渐变浮现
+          var lineH = Math.max(24, Math.min(88, (prevBlock === tailBlock && blockRect.height > prevHeight) ? (blockRect.height - prevHeight) : 28));
+          tailBlock.setAttribute('data-cb-stream-tail', 'line');
+          tailBlock.style.setProperty('--cb-line-h', lineH + 'px');
+          tailBlock.style.transition = 'none';
+          tailBlock.style.setProperty('--cb-line-alpha', '0.06');
+          void tailBlock.offsetWidth;
+          tailBlock.style.transition = '';
+          tailBlock.style.setProperty('--cb-line-alpha', '1');
+          prevTargetX = targetX;
+        } else if (!lineWrapped && deltaChars > 0) {
+          // 慢速/常速同行推进：左右渐变推进
+          tailBlock.setAttribute('data-cb-stream-tail', 'horizontal');
+          tailBlock.style.setProperty('--cb-line-h', '28px');
+          var basePrevX = (prevBlock === tailBlock && prevTargetX < targetX) ? prevTargetX : 0;
+          var startX = Math.max(16, basePrevX + 18);
+          tailBlock.style.transition = 'none';
+          tailBlock.style.setProperty('--cb-reveal-x', startX + 'px');
+          void tailBlock.offsetWidth;
+          tailBlock.style.transition = '';
+          tailBlock.style.setProperty('--cb-reveal-x', (targetX + 76) + 'px');
+          prevTargetX = targetX;
+        }
+
+        prevBlock = tailBlock;
+        prevTextLen = textLen;
+        prevHeight = blockRect ? blockRect.height : 0;
+        prevLineTop = caretTop;
+      } catch (_) {}
+
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(function () {
+        if (activeBlock) {
+          cleanupBlock(activeBlock);
+          activeBlock = null;
+        }
+      }, 280);
+    }
+
+    function scheduleFrame() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(onFrame);
+    }
+
+    var observer = new MutationObserver(function () {
+      scheduleFrame();
+    });
+
+    try {
+      if (document.body) {
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+          attributes: true,
+          attributeFilter: ['data-streaming', 'data-state']
+        });
+      }
+    } catch (_) {}
+
+    return function () {
+      if (observer) {
+        try { observer.disconnect(); } catch (_) {}
+      }
+      if (rafId !== null) {
+        try { cancelAnimationFrame(rafId); } catch (_) {}
+        rafId = null;
+      }
+      if (settleTimer) {
+        try { clearTimeout(settleTimer); } catch (_) {}
+        settleTimer = null;
+      }
+      if (activeBlock) {
+        cleanupBlock(activeBlock);
+        activeBlock = null;
+      }
+      prevBlock = null;
+    };
+  }, PLUGIN_ID + ': streaming gradient reveal');
+
+  // 浮现卡片（HoverCard）、上拉/下拉菜单与弹窗卡片离场残影过渡（145ms 极轻量双保险自动销毁）
+  ctx.effect(function () {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
+
+    var FLOAT_SELECTOR = '[data-menu-material="translucent"]:not(.cb-exit-ghost), [style*="--dsh-hover-preview-fade"]:not(.cb-exit-ghost), ._card_l6gf9_9:not(.cb-exit-ghost), .mR10tW_panel:not(.cb-exit-ghost), [class$="_panel"][role="dialog"]:not(.cb-exit-ghost)';
+    var rectCache = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+
+    function getDirection(el) {
+      try {
+        if (el.matches && el.matches('[style*="--dsh-hover-preview-fade"], ._card_l6gf9_9')) return 'hovercard';
+        if (el.matches && el.matches('[data-anchor-side="top"], .htuFrW_menu, .m00Doa_card, [class*="_sideTop"], .mR10tW_panel, [class$="_panel"][role="dialog"]')) return 'up';
+      } catch (_) {}
+      return 'down';
+    }
+
+    function snapshotVisibleCards() {
+      if (!rectCache || typeof document === 'undefined') return;
+      try {
+        var cards = document.querySelectorAll(FLOAT_SELECTOR);
+        for (var i = 0; i < cards.length; i++) {
+          var el = cards[i];
+          var rect = el.getBoundingClientRect();
+          if (rect.width > 4 && rect.height > 4) {
+            rectCache.set(el, {
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
+              dir: getDirection(el)
+            });
+          }
+        }
+      } catch (_) {}
+    }
+
+    function triggerSnapshot() {
+      if (typeof requestAnimationFrame !== 'undefined') requestAnimationFrame(snapshotVisibleCards);
+      setTimeout(snapshotVisibleCards, 60);
+      setTimeout(snapshotVisibleCards, 210);
+    }
+
+    function clearExistingGhosts(dirFilter) {
+      try {
+        var sel = dirFilter ? '.cb-exit-ghost[data-cb-exit-dir="' + dirFilter + '"]' : '.cb-exit-ghost';
+        var old = document.querySelectorAll(sel);
+        for (var i = 0; i < old.length; i++) old[i].remove();
+      } catch (_) {}
+    }
+
+    function spawnGhost(target, info) {
+      var ghost = target.cloneNode(true);
+      sanitizeGhost(ghost);
+      ghost.classList.add('cb-exit-ghost');
+      ghost.setAttribute('data-cb-exit-dir', info.dir);
+      ghost.setAttribute('aria-hidden', 'true');
+      ghost.style.setProperty('left', info.left + 'px', 'important');
+      ghost.style.setProperty('top', info.top + 'px', 'important');
+      ghost.style.setProperty('width', info.width + 'px', 'important');
+      ghost.style.setProperty('height', info.height + 'px', 'important');
+
+      document.body.appendChild(ghost);
+      ghost.addEventListener('animationend', function () {
+        ghost.remove();
+      }, { once: true });
+      setTimeout(function () {
+        if (ghost.parentNode) ghost.remove();
+      }, 180);
+    }
+
+    function onPassiveInteraction() {
+      try {
+        if (!document.querySelector(FLOAT_SELECTOR)) return;
+        snapshotVisibleCards();
+      } catch (_) {}
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pointerdown', onPassiveInteraction, true);
+      window.addEventListener('pointerover', onPassiveInteraction, true);
+      window.addEventListener('keydown', onPassiveInteraction, true);
+    }
+
+    function sanitizeGhost(root) {
+      try {
+        root.removeAttribute('id');
+        root.removeAttribute('anchor-name');
+        root.removeAttribute('position-anchor');
+        if (root.style) {
+          root.style.removeProperty('anchor-name');
+          root.style.removeProperty('position-anchor');
+        }
+        var descendants = root.querySelectorAll('*');
+        for (var i = 0; i < descendants.length; i++) {
+          var d = descendants[i];
+          d.removeAttribute('id');
+          d.removeAttribute('anchor-name');
+          d.removeAttribute('position-anchor');
+          if (d.style) {
+            d.style.removeProperty('anchor-name');
+            d.style.removeProperty('position-anchor');
+          }
+        }
+      } catch (_) {}
+    }
+
+    function handleRemovedNode(node) {
+      if (!node || node.nodeType !== 1) return;
+      if (node.classList && node.classList.contains('cb-exit-ghost')) return;
+      if (node.hasAttribute && node.hasAttribute('data-menu-backing')) return;
+
+      var targets = [];
+      try {
+        if (node.matches && node.matches(FLOAT_SELECTOR)) {
+          targets.push(node);
+        }
+        if (node.querySelectorAll) {
+          var sub = node.querySelectorAll(FLOAT_SELECTOR);
+          for (var i = 0; i < sub.length; i++) targets.push(sub[i]);
+        }
+      } catch (_) {}
+
+      for (var j = 0; j < targets.length; j++) {
+        var target = targets[j];
+        try {
+          if (target.getAttribute('data-menu-phase') === 'dismiss' || target.hasAttribute('data-closing')) {
+            continue;
+          }
+          var info = rectCache ? rectCache.get(target) : null;
+          if (!info || info.width <= 4) continue;
+
+          clearExistingGhosts(info.dir === 'hovercard' ? 'hovercard' : null);
+          spawnGhost(target, info);
+        } catch (_) {}
+      }
+    }
+
+    var observer = new MutationObserver(function (records) {
+      var hasNewCard = false;
+      for (var r = 0; r < records.length; r++) {
+        var rec = records[r];
+        if (rec.removedNodes && rec.removedNodes.length > 0) {
+          for (var rm = 0; rm < rec.removedNodes.length; rm++) {
+            handleRemovedNode(rec.removedNodes[rm]);
+          }
+        }
+        if (rec.addedNodes && rec.addedNodes.length > 0) {
+          for (var a = 0; a < rec.addedNodes.length; a++) {
+            var an = rec.addedNodes[a];
+            if (an.nodeType === 1 && !(an.classList && an.classList.contains('cb-exit-ghost'))) {
+              if ((an.matches && an.matches(FLOAT_SELECTOR)) || (an.querySelector && an.querySelector(FLOAT_SELECTOR))) {
+                hasNewCard = true;
+              }
+            }
+          }
+        }
+      }
+      if (hasNewCard) {
+        clearExistingGhosts('hovercard');
+        triggerSnapshot();
+      }
+    });
+
+    try {
+      if (document.body) {
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      }
+    } catch (_) {}
+
+    return function () {
+      if (observer) {
+        try { observer.disconnect(); } catch (_) {}
+      }
+      if (typeof window !== 'undefined') {
+        try {
+          window.removeEventListener('pointerdown', onPassiveInteraction, true);
+          window.removeEventListener('pointerover', onPassiveInteraction, true);
+          window.removeEventListener('keydown', onPassiveInteraction, true);
+        } catch (_) {}
+      }
+      var remainingGhosts = document.querySelectorAll('.cb-exit-ghost');
+      for (var g = 0; g < remainingGhosts.length; g++) {
+        remainingGhosts[g].remove();
+      }
+    };
+  }, PLUGIN_ID + ': floating card exit transition');
 }
 
 exports.apply = apply;
