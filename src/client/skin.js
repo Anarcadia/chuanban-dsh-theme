@@ -5,7 +5,7 @@
  *
  * 皮肤方案（D148 Phase 1，浅度定制）：
  * - 全部走官方通道：ctx.theme.overrideTokens token 覆盖层 + 一个 <style data-plugin> 全局微调。
- * - 零 MutationObserver / TreeWalker / 轮询；token 经 theme-presenter 一次性写入 body，动效性能零负担。
+ * - 零 DOM 监听 / TreeWalker / 轮询；token 经 theme-presenter 一次性写入 body，动效性能零负担。
  * - 配色对标 D143 absoulutely-chuanban：暖白纸 #FBF9F5 / 温暖炭黑 #2C2B29 / 陶土 #D97757 / 牛皮纸侧栏 #F1E8DC。
  * - light/dark 均填暖纸浅色值（固定暖纸外观；语义状态色 / toast / diff 保留官方默认）。
  * - 三层字体（二次调整）：UI 层 Anthropic Sans + 苹方；正文层 Anthropic Serif + 苹方；代码层纯更纱 Slab 等宽。
@@ -55,13 +55,13 @@ var TOKENS = {
   '--dsw-alias-card-fill-hover': pair('#F1EAE0'),
   '--dsw-alias-card-tile-fill': pair('rgba(253, 251, 247, 0.5)'),
 
-  // 边框（实色暖灰梯度再加深一档——「实」的框线是 Antigravity/D143 核心思路；
+  // 边框（实色暖灰梯度加固——「实」的框线是 Antigravity/D143 核心思路；
   // 官方 CSS 已用 .5px 发丝线宽，颜色实化后即为 Claude 式清晰锐利细线）
-  '--dsw-alias-border-l1': pair('#E4E0D7'),
-  '--dsw-alias-border-l2': pair('#DAD5CA'),
-  '--dsw-alias-border-l3': pair('#D0C9BB'),
-  '--dsw-alias-border-l4': pair('#C6BFAE'),
-  '--dsw-alias-separator-primary': pair('#E4E0D7'),
+  '--dsw-alias-border-l1': pair('#E2DDD2'),
+  '--dsw-alias-border-l2': pair('#D6CFC2'),
+  '--dsw-alias-border-l3': pair('#C8BFAE'),
+  '--dsw-alias-border-l4': pair('#B9AF9C'),
+  '--dsw-alias-separator-primary': pair('#E2DDD2'),
 
   // 品牌与强调（Anthropic 陶土）
   '--dsw-alias-brand-primary': pair('#D97757'),
@@ -85,18 +85,18 @@ var TOKENS = {
   '--dsw-alias-label-primary-dimmed': pair('#33302A'),
   '--dsw-alias-menu-icon': pair('#38342C'),
 
-  // 交互面（陶土暖晕）
-  '--dsw-alias-interactive-bg-hover': pair('rgba(180, 120, 90, 0.07)'),
-  '--dsw-alias-interactive-bg-active': pair('rgba(180, 120, 90, 0.12)'),
-  '--dsw-alias-interactive-bg-hover-accent': pair('rgba(217, 119, 87, 0.14)'),
-  '--dsw-alias-interactive-bg-hover-solid': pair('#F3E9DE'),
+  // 交互面（Warm Stone / Oat Ink 暖石双阶色阶，对齐 Claude Desktop 灰阶压深比）
+  '--dsw-alias-interactive-bg-hover': pair('rgba(48, 42, 34, 0.075)'),
+  '--dsw-alias-interactive-bg-active': pair('rgba(48, 42, 34, 0.145)'),
+  '--dsw-alias-interactive-bg-hover-accent': pair('rgba(217, 119, 87, 0.16)'),
+  '--dsw-alias-interactive-bg-hover-solid': pair('#E5DFD3'),
 
   // 按钮（浅面）
-  '--dsw-alias-button-elevated-fill': pair('#FBF9F5'),
-  '--dsw-alias-button-floating-fill': pair('#FBF9F5'),
-  '--dsw-alias-button-floating-hover': pair('#F3E9DE'),
-  '--dsw-alias-button-ghost-active-fill': pair('#F1EAE0'),
-  '--dsw-alias-button-ghost-active-border': pair('#D5C8B5'),
+  '--dsw-alias-button-elevated-fill': pair('#FAF7F2'),
+  '--dsw-alias-button-floating-fill': pair('#FAF7F2'),
+  '--dsw-alias-button-floating-hover': pair('#ECE6DA'),
+  '--dsw-alias-button-ghost-active-fill': pair('#DFD8CC'),
+  '--dsw-alias-button-ghost-active-border': pair('#C4B9A5'),
   '--dsw-alias-button-contrast-fill': pair('#2C2B29'),
 
   // markdown 区（代码块/行内码/引用/标签走暖纸纸色系）
@@ -106,7 +106,7 @@ var TOKENS = {
   '--dsw-alias-markdown-citation': pair('#E6D9C8'),
   '--dsw-alias-markdown-tag': pair('#E6D9C8'),
   '--dsw-alias-turn-trigger-bg': pair('#F1EAE0'),
-  '--dsw-alias-turn-trigger-bg-hover': pair('rgba(180, 120, 90, 0.07)'),
+  '--dsw-alias-turn-trigger-bg-hover': pair('rgba(48, 42, 34, 0.075)'),
 
   // 滚动条（暖纸纸色系）
   '--dsw-alias-scrollbar-bg-l1': pair('#E3D9CB'),
@@ -117,7 +117,7 @@ var TOKENS = {
   // 侧栏（燕麦暖灰淡化一档：#ECE8DF → #F1EEE7，与主区 #FBF9F5 保持 ~12 单位关系；
   // darwin 平台特化着色层在 GLOBAL_CSS 中另行中和，见下）
   '--dsw-specific-sidebar-fill': pair('#F1EEE7'),
-  '--dsw-specific-sidebar-nav-item-active': pair('#E9E4DA'),
+  '--dsw-specific-sidebar-nav-item-active': pair('#DFD9CE'),
   '--dsw-specific-sidebar-nav-item-active-accent': pair('#F3DDD3'),
   // 0.2.2 wash/tint/glass 层（darwin 特化渐变的新形态，官方叠紫灰 #8f89b8 / 蓝 #7a9bf0）：
   // token 全部置 transparent / 暖纸半透明，令 sidebar-fill 独占侧栏着色
@@ -126,21 +126,22 @@ var TOKENS = {
   '--dsw-specific-sidebar-wash-bottom': pair('transparent'),
   '--dsw-specific-sidebar-wash-bottom-clear': pair('transparent'),
   '--dsw-specific-sidebar-tint': pair('transparent'),
-  '--dsw-specific-sidebar-glass-fill': pair('rgba(241, 238, 231, 0.85)'),
-  '--dsw-specific-sidebar-glass-hover': pair('rgba(241, 238, 231, 0.55)'),
-  '--dsw-specific-sidebar-glass-collapsed-fill': pair('rgba(241, 238, 231, 0.85)'),
-  '--dsw-specific-sidebar-glass-collapsed-hover': pair('rgba(233, 228, 218, 0.6)'),
+  '--dsw-specific-sidebar-glass-fill': pair('#FAF7F2'),
+  '--dsw-specific-sidebar-glass-hover': pair('#EFECE4'),
+  '--dsw-specific-sidebar-glass-collapsed-fill': pair('transparent'),
+  '--dsw-specific-sidebar-glass-collapsed-hover': pair('rgba(48, 42, 34, 0.075)'),
 
   // 气泡与输入面（2026-10-17 三改：输入卡片改纯白 #FFFFFF，靠暖光阴影浮于略深主区上——
   // 借鉴 ZCode UI「白卡片 + 阴影 + 偏深主界面」的对比方式，替代先前「随左栏同色」方案）
-  '--dsw-specific-bubble': pair('#F8F4ED'),
+  '--dsw-specific-bubble': pair('#F3EDE2'),
   '--dsw-specific-bubble-highlight': pair('#F3E0D4'),
   '--dsw-specific-input-major': pair('#FFFFFF'),
-  '--dsw-specific-selector': pair('#F1EAE0'),
+  '--dsw-specific-selector': pair('#EAE4DA'),
 
-  // 菜单与设置卡
-  '--dsw-specific-menu': pair('#FDFBF7'),
-  '--dsw-alias-menu-group-header-fill': pair('#FDFBF7'),
+  // 菜单与设置卡（对齐 Claude Desktop 纯白高对比浮层）
+  '--dsw-specific-menu': pair('#FFFFFF'),
+  '--dsw-menu-surface-fill': pair('#FFFFFF'),
+  '--dsw-alias-menu-group-header-fill': pair('#FFFFFF'),
   '--dsw-alias-settings-card-fill': pair('#F7F2E9'),
   '--dsw-alias-settings-card-stroke': pair('#C6BFAE')
 };
@@ -203,7 +204,42 @@ var GLOBAL_CSS = [
   '.JoiKIa_searchResultRow { min-height: calc(48px * var(--cb-scale, 1)) !important; padding-block: calc(4px * var(--cb-scale, 1)) !important; }',
   '._77Pn0W_trigger:not(._77Pn0W_rail) { height: calc(42px * var(--cb-scale, 1)) !important; font-size: calc(14px + var(--dsh-content-font-delta, 0px)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
   // 右侧主对话区横向内容列宽同步缩放（保留用户手动拖拽 --dsh-chat-user-width 优先级）
-  '.kiGsTW_body { --dsh-chat-content-width: var(--dsh-chat-user-width, min(calc(var(--dsh-conversation-column-width, 100vw) - 64px), clamp(calc(680px * var(--cb-scale, 1)), calc(var(--dsh-conversation-column-width, 0px) * 0.64 * var(--cb-scale, 1)), calc(920px * var(--cb-scale, 1))))) !important; }'
+  '.kiGsTW_body { --dsh-chat-content-width: var(--dsh-chat-user-width, min(calc(var(--dsh-conversation-column-width, 100vw) - 64px), clamp(calc(680px * var(--cb-scale, 1)), calc(var(--dsh-conversation-column-width, 0px) * 0.64 * var(--cb-scale, 1)), calc(920px * var(--cb-scale, 1))))) !important; }',
+
+  // 实体层次感补齐与交互加固（Stage 1 Hover → Stage 2 Active / Latched-Open 实体状态机）
+  // 模块 1：全界面按钮与下拉触发器「双阶变色」状态机
+  'button, [role="menuitem"], [role="menuitemradio"], [role="option"] { transition: background-color 0.1s ease, box-shadow 0.12s ease; }',
+  'button[aria-haspopup][aria-expanded="true"]:not(:disabled), [role="button"][aria-haspopup][aria-expanded="true"]:not([aria-disabled="true"]), button:has([class$="_chevronOpen"], [class*="_chevronOpen "]), [class$="_trigger"][aria-expanded="true"]:not(:disabled), [class*="_trigger_"][aria-expanded="true"]:not(:disabled), button[class$="_pill"][aria-expanded="true"], [class$="_selectorButton"][aria-expanded="true"], [class$="_panelRow"][aria-expanded="true"], [class$="_projectRow"][class*="_menuOpen"], [class$="_sessionRow"][class*="_menuOpen"] { background-color: var(--dsw-alias-interactive-bg-active) !important; color: var(--dsw-alias-label-primary) !important; }',
+  'button:not(:disabled):not([class*="_primary_"]):not([class$="_primary"]):not([class$="_sendButton"]):not([class$="_add"]):not([class*="_add_"]):not([class$="_newSession"]):not([class*="_newSession_"]):not([class$="_chip"]):not([class*="_chip_"]):active, [role="menuitem"]:not(:disabled):active, [role="menuitemradio"]:not(:disabled):active, [role="option"]:not(:disabled):active, [class$="_projectRow"]:active, [class$="_sessionRow"]:active, [class$="_panelRow"]:active { background-color: var(--dsw-alias-interactive-bg-active) !important; }',
+  '[class$="_chip"]:not(:disabled):active, [class*="_chip_"]:not(:disabled):active { background-color: rgba(217, 119, 87, 0.24) !important; }',
+  '.JZLxKW_add, [class$="_add"] { background-color: var(--dsw-specific-selector) !important; box-shadow: inset 0 0 0 0.5px rgba(44, 43, 41, 0.08) !important; }',
+  '.JZLxKW_add:hover:not(:disabled), [class$="_add"]:hover:not(:disabled) { background-color: #E0D8CA !important; }',
+  '.JZLxKW_add:active:not(:disabled), .JZLxKW_add[aria-expanded="true"], [class$="_add"]:active:not(:disabled), [class$="_add"][aria-expanded="true"] { background-color: #D2C8B8 !important; box-shadow: inset 0 1px 2px rgba(44, 43, 41, 0.12) !important; }',
+  '[class*="_primary_"]:not(:disabled):active, [class$="_primary"]:not(:disabled):active, [class$="_sendButton"]:not(:disabled):active { background-color: #B35B3E !important; }',
+  '[class*="_outline_"]:not(:disabled):active, [class$="_outline"]:not(:disabled):active, [class*="_toolbar_"]:not(:disabled):active, [class$="_toolbar"]:not(:disabled):active, [class$="_inspectButton"]:not(:disabled):active { background-color: var(--dsw-alias-interactive-bg-active) !important; }',
+
+  // 模块 2：下拉菜单与浮层卡片实体立体感
+  '[class*="_surface_"][role="menu"], [class*="_surface_"][role="group"], [class*="_list_"][role="menu"], .htuFrW_menu, [class$="_menu"][role="menu"], [class$="_menu"][role="group"], [class*="_panel_"][role="dialog"] { --dsw-elevation-stroke-color: #C5BCAE !important; box-shadow: 0 0 0 0.75px #C5BCAE, 0 4px 12px -2px rgba(44, 43, 41, 0.08), 0 14px 32px -4px rgba(44, 43, 41, 0.12) !important; }',
+  '[class*="_surface_"] > [class*="_material_"], [class$="_surface"] > [class$="_material"] { background: #FFFFFF !important; }',
+  '[class*="_list_"] [class*="_footer_"], [class$="_list"] [class$="_footer"], [class*="_list_"] [role="separator"], [class$="_list"] [role="separator"] { border-color: #E2DDD2 !important; }',
+
+  // 模块 3：左侧边栏「新建会话」主按钮与「悬停 vs 选中 vs 按下」三态分层
+  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession, [class$="_root"]:not([class*="_collapsed"]) [class$="_newSession"] { background: #FAF7F2 !important; border: 0.5px solid #CFC8B8 !important; box-shadow: 0 1px 2px rgba(44, 43, 41, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important; }',
+  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession:hover, [class$="_root"]:not([class*="_collapsed"]) [class$="_newSession"]:hover { background: #EFECE4 !important; border-color: #C2B9A7 !important; }',
+  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession:active, [class$="_root"]:not([class*="_collapsed"]) [class$="_newSession"]:active { background: #E2DDD2 !important; box-shadow: inset 0 1px 2px rgba(44, 43, 41, 0.10) !important; }',
+  '.JoiKIa_sessionRow.JoiKIa_selected, .kB3qhq_panelEntryActive, [class$="_sessionRow"][class*="_selected"] { background-color: rgba(48, 42, 34, 0.115) !important; font-weight: 500 !important; box-shadow: inset 0 0 0 0.5px rgba(44, 43, 41, 0.07) !important; }',
+  '.JoiKIa_sessionRow.JoiKIa_selected:hover, .kB3qhq_panelEntryActive:hover, [class$="_sessionRow"][class*="_selected"]:hover { background-color: var(--dsw-alias-interactive-bg-active) !important; }',
+
+  // 模块 4：Markdown 代码块、工具调用卡片与终端块实体框线
+  '.md-code-block, [class*="_block_"]:has(> [class*="_bannerWrap_"]) { border: 0.5px solid var(--dsw-alias-border-l2) !important; box-shadow: 0 1px 3px rgba(44, 43, 41, 0.03) !important; }',
+  '[class*="_banner_"] { border-bottom: 0.5px solid var(--dsw-alias-border-l2) !important; }',
+  '[class*="_row_"][data-expandable] { border-radius: 6px; padding-inline: 4px; margin-inline: -4px; transition: background-color 0.12s ease; }',
+  '[class*="_row_"][data-expandable]:hover { background-color: rgba(48, 42, 34, 0.05); }',
+  '[class*="_row_"][data-expandable]:active { background-color: rgba(48, 42, 34, 0.11); }',
+
+  // 模块 5：分段控制器滑块与用户消息气泡实体边线
+  '[class*="_control_"] > [class*="_indicator_"], [class*="_tabs_"] > [class*="_indicator_"] { background: #FFFFFF !important; box-shadow: 0 0 0 0.5px #CFC8B8, 0 1px 3px rgba(44, 43, 41, 0.08) !important; }',
+  '[class*="_bubble_"]:not([role="tooltip"]) { border: 0.5px solid #E2DACB !important; box-shadow: 0 1px 2px rgba(44, 43, 41, 0.03) !important; }'
 ].join('\n');
 
 var PLUGIN_ID = 'chuanban-dsh-theme';

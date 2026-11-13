@@ -42,7 +42,7 @@ const required = {
   '--dsw-alias-label-primary': '#2C2B29',
   '--dsw-alias-brand-primary': '#D97757',
   '--dsw-specific-sidebar-fill': '#F1EEE7',
-  '--dsw-specific-sidebar-nav-item-active': '#E9E4DA',
+  '--dsw-specific-sidebar-nav-item-active': '#DFD9CE',
   '--dsw-alias-markdown-code-block': '#F1EAE0',
 };
 for (const [name, expect] of Object.entries(required)) {
@@ -188,6 +188,24 @@ ok('GLOBAL_CSS 包含右侧正文列宽同步缩放规则（.kiGsTW_body / --dsh
     else globalThis.document = prevDoc;
   }
 }
+
+console.log('[6] 双阶按压/展开加深与实体层次感规则');
+ok('--dsw-alias-interactive-bg-hover = rgba(48, 42, 34, 0.075)', tokens['--dsw-alias-interactive-bg-hover']?.light === 'rgba(48, 42, 34, 0.075)');
+ok('--dsw-alias-interactive-bg-active = rgba(48, 42, 34, 0.145)', tokens['--dsw-alias-interactive-bg-active']?.light === 'rgba(48, 42, 34, 0.145)');
+ok('--dsw-menu-surface-fill = #FFFFFF', tokens['--dsw-menu-surface-fill']?.light === '#FFFFFF');
+ok('--dsw-specific-bubble = #F3EDE2', tokens['--dsw-specific-bubble']?.light === '#F3EDE2');
+ok('--dsw-specific-selector = #EAE4DA', tokens['--dsw-specific-selector']?.light === '#EAE4DA');
+ok('GLOBAL_CSS 含 aria-expanded="true" 锁定展开态选择器', skinSrc.includes('aria-expanded="true"'));
+ok('GLOBAL_CSS 含 _chevronOpen 下拉指示器选择器', skinSrc.includes('_chevronOpen'));
+ok('GLOBAL_CSS 含 :active 瞬态按压加深', skinSrc.includes(':active'));
+ok('GLOBAL_CSS 含 .JZLxKW_add 输入框添加按钮三态', skinSrc.includes('.JZLxKW_add'));
+ok('GLOBAL_CSS 含 [class*="_surface_"] 下拉与浮层立体感', skinSrc.includes('[class*="_surface_"]'));
+ok('GLOBAL_CSS 含 #C5BCAE 浮层边框/阴影色', skinSrc.includes('#C5BCAE'));
+ok('GLOBAL_CSS 含 .kB3qhq_newSession 新建会话分层与选中行加深', skinSrc.includes('.kB3qhq_newSession'));
+ok('GLOBAL_CSS 含 md-code-block 代码块边框与顶栏', skinSrc.includes('md-code-block'));
+ok('GLOBAL_CSS 含 [data-expandable] 工具折叠行 hover/active 变色', skinSrc.includes('[data-expandable]'));
+ok('GLOBAL_CSS 含 [class*="_bubble_"]:not([role="tooltip"]) 排除 Tooltip 气泡边线', skinSrc.includes('[class*="_bubble_"]:not([role="tooltip"])'));
+ok('零 MutationObserver / setInterval 运行时开销', !skinSrc.includes('MutationObserver') && !skinSrc.includes('setInterval'));
 
 console.log(fail === 0 ? '\n全部 ' + pass + ' 项通过' : '\n' + fail + ' 项失败');
 process.exit(fail === 0 ? 0 : 1);
