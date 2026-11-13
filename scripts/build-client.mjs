@@ -1,4 +1,4 @@
-// 构建 dist/client.js：将 src/client/skin.js 包装为 DSH lazy-CJS 客户端模块，
+// 构建 dist/client.js：将 src/client/fonts-woff2.js + src/client/skin.js 包装为 DSH lazy-CJS 客户端模块，
 // 并同步 host 薄壳 src/index.js 到 dist/index.js（host 无编译需求）。
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -7,8 +7,10 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ID = 'chuanban-dsh-theme';
 
-const skin = readFileSync(join(root, 'src/client/skin.js'), 'utf8');
-const body = skin.split('\n').map((l) => (l ? '\t\t' + l : l)).join('\n');
+const fonts = readFileSync(join(root, 'src/client/fonts-woff2.js'), 'utf8').replace(/\r\n/g, '\n');
+const skin = readFileSync(join(root, 'src/client/skin.js'), 'utf8').replace(/\r\n/g, '\n');
+const combined = fonts.trimEnd() + '\n\n' + skin;
+const body = combined.split('\n').map((l) => (l ? '\t\t' + l : l)).join('\n');
 const out = `window.__ModuleLoader__.load({
 	id: ${JSON.stringify(ID)},
 	factory: (require) => {

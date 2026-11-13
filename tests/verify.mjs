@@ -1,4 +1,4 @@
-// 自检：client bundle 结构、token 覆盖层形状与关键项、host 产物、patch 声明。
+// 自检：client bundle 结构、token 覆盖层形状与关键项、host 产物、patch 声明、跨平台 Windows 修復与内嵌 WOFF2 字体。
 // 运行：node tests/verify.mjs（先 node scripts/build-client.mjs）
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -20,10 +20,11 @@ ok('lazy-CJS 包装（window.__ModuleLoader__.load）', client.includes('window.
 ok('模块 id 正确', client.includes(JSON.stringify(ID)));
 ok('factory 体闭合（return module.exports）', client.includes('return module.exports;'));
 
-console.log('[2] token 覆盖层（模拟 wrapper 执行 skin 源，取导出）');
+console.log('[2] token 覆盖层（模拟 wrapper 执行 fonts-woff2 + skin 源，取导出）');
+const fontsSrc = readFileSync(join(root, 'src/client/fonts-woff2.js'), 'utf8');
 const skinSrc = readFileSync(join(root, 'src/client/skin.js'), 'utf8');
 const mod = { exports: {} };
-new Function('require', 'module', 'exports', skinSrc)(() => { throw new Error('skin.js 顶层不应 require 平台模块'); }, mod, mod.exports);
+new Function('require', 'module', 'exports', fontsSrc + '\n' + skinSrc)(() => { throw new Error('skin.js 顶层不应 require 平台模块'); }, mod, mod.exports);
 const tokens = mod.exports.CHUANBAN_THEME_TOKENS;
 ok('导出 CHUANBAN_THEME_TOKENS / apply / inject', !!(tokens && mod.exports.apply && Array.isArray(mod.exports.inject)));
 ok('inject 声明依赖 theme 服务', mod.exports.inject.includes('theme'));
@@ -91,12 +92,20 @@ ok('GLOBAL_CSS 包含右侧正文列宽同步缩放规则（.kiGsTW_body / [data
   skinSrc.includes('.kiGsTW_body') && skinSrc.includes('[data-conversation-content]') && skinSrc.includes('--dsh-chat-content-width: var(--dsh-chat-user-width'));
 
 // 模拟 apply(ctx) 运行态：验证 --cb-scale 初始化、theme/change 联动与 setSidebar 按比例调用、以及 disposer 清理
+let injectedStyleContent = '';
 {
   const bodyProps = new Map();
   const prevDoc = globalThis.document;
   globalThis.document = {
     head: { appendChild() {} },
-    createElement() { return { dataset: {}, textContent: '', remove() {} }; },
+    createElement() {
+      return {
+        dataset: {},
+        set textContent(v) { injectedStyleContent = v; },
+        get textContent() { return injectedStyleContent; },
+        remove() {},
+      };
+    },
     body: {
       style: {
         setProperty(k, v) { bodyProps.set(k, v); },
@@ -221,9 +230,9 @@ ok('GLOBAL_CSS 含 .kB3qhq_newSession 新建会话分层与选中行加深', ski
 ok('GLOBAL_CSS 含 md-code-block 代码块边框与顶栏', skinSrc.includes('md-code-block'));
 ok('GLOBAL_CSS 含 [data-expandable] 工具折叠行 hover/active 变色', skinSrc.includes('[data-expandable]'));
 ok('GLOBAL_CSS 含 [class*="_bubble_"]:not([role="tooltip"]) 排除 Tooltip 气泡边线', skinSrc.includes('[class*="_bubble_"]:not([role="tooltip"])'));
-ok('零 setInterval 轮询运行时开销（流式监听采用单个 rAF 节流 MutationObserver）', !skinSrc.includes('setInterval') && skinSrc.includes('requestAnimationFrame'));
+ok('零 setInterval 轮询运行时开销（离场残影等效果均为 rAF 节流 MutationObserver）', !skinSrc.includes('setInterval') && skinSrc.includes('requestAnimationFrame'));
 
-console.log('[7] Phase C：流式状态栏 Claude 橙色系、鲸鱼慢速大幅摇摆与「大片逆向渐隐 + 60fps 柔顺下拉」流式引擎');
+console.log('[7] Phase C：流式状态栏 Claude 橙色系与鲸鱼慢速大幅摇摆（流式渐显引擎已退役，流式渲染 100% 原生）');
 ok('--dsw-alias-label-deep-diving = #CE6846', tokens['--dsw-alias-label-deep-diving']?.light === '#CE6846');
 ok('--dsw-alias-label-deep-diving-shimmer = #F4B293', tokens['--dsw-alias-label-deep-diving-shimmer']?.light === '#F4B293');
 ok('--dsw-alias-label-shimmer = rgba(217, 119, 87, 0.42)', tokens['--dsw-alias-label-shimmer']?.light === 'rgba(217, 119, 87, 0.42)');
@@ -233,10 +242,10 @@ ok('GLOBAL_CSS 含鲸鱼矢量大幅慢速摆动（cb-whale-slow-swing 3.2s / 43
   skinSrc.includes('cb-whale-slow-swing') && skinSrc.includes('3.2s') && skinSrc.includes('43% 86%') && skinSrc.includes('rotate(-22deg)'));
 ok('GLOBAL_CSS 含关闭 APNG 动画与解容器裁切规则（display: none / overflow: visible）',
   skinSrc.includes('runningWhaleAnimated') && skinSrc.includes('overflow: visible'));
-ok('GLOBAL_CSS 含大片多阶 S 曲线纵向逆向渐隐幕布（[data-cb-stream-root] / 0.86 / 0.54 / 0.20）与块级下浮动画（cb-stream-sheet-in）',
-  skinSrc.includes('[data-cb-stream-root]') && skinSrc.includes('--cb-stream-y-solid') && skinSrc.includes('--cb-stream-y-end') && skinSrc.includes('rgba(0, 0, 0, 0.86)') && skinSrc.includes('cb-stream-sheet-in'));
-ok('apply(ctx) 包含 SHEET_DEPTH=165 大片纵向逆向渐隐与 visualH + margin-bottom 60fps 柔顺下拉引擎',
-  skinSrc.includes('streaming gradient reveal') && skinSrc.includes('SHEET_DEPTH = 165') && skinSrc.includes('visualH') && skinSrc.includes("setProperty('margin-bottom'") && skinSrc.includes('requestAnimationFrame') && skinSrc.includes('MutationObserver'));
+ok('流式渐显引擎已退役剥离：GLOBAL_CSS 无任何流式遮罩/幕布规则（[data-cb-stream-root] / --cb-stream-* / 块级下浮动画 / stream-tail 死规则 / will-change 巨层 全部不存在）',
+  !skinSrc.includes('[data-cb-stream-root]') && !skinSrc.includes('--cb-stream') && !skinSrc.includes('cb-stream-sheet-in') && !skinSrc.includes('data-cb-stream-tail') && !skinSrc.includes('will-change: mask-image'));
+ok('源码含剥离决定（已整体剥离（2026-11-14 决策放弃））且零引擎实现残留（lockAngle / findLastText / __cbStream / margin-bottom 引擎等全部不存在）',
+  skinSrc.includes('已整体剥离（2026-11-14 决策放弃') && !skinSrc.includes('lockAngle') && !skinSrc.includes('findLastText') && !skinSrc.includes('__cbStream') && !skinSrc.includes("setProperty('margin-bottom'"));
 
 console.log('[8] Phase D：浮现卡片与上拉/下拉菜单渐变出现与消失动效');
 ok('GLOBAL_CSS 含透明毛玻璃底衬层中和（[data-menu-backing] opacity: 0）',
@@ -259,7 +268,7 @@ ok('P0/P1/P2 对抗审查修复项（排除 aria-modal 模态框 + [data-trigger
   skinSrc.includes('hasActiveCards') &&
   skinSrc.includes(':where(:not('));
 
-console.log('[9] GitHub Issue #1：跨平台 Windows DirectWrite 字体别名、回退栈与免哈希正文规则');
+console.log('[9] GitHub Issue #1 & Windows 联调（FIX A/B/C/D/G1/G3 + 内嵌 WOFF2 可变字体）');
 ok('UI 字体栈包含 Windows DirectWrite 别名 Anthropic Sans Web Display Light 与 Microsoft YaHei UI',
   tokens['--dsw-font-family'].light.includes('Anthropic Sans Web Display Light') &&
   tokens['--dsw-font-family'].light.includes('Microsoft YaHei UI'));
@@ -274,6 +283,22 @@ ok('正文阅读层绑定免哈希稳定类名 [class*="_markdown_"] 并穿透�
   skinSrc.includes('[class*="_markdown_"]') &&
   skinSrc.includes('--dsw-font-markdown-base:') &&
   skinSrc.includes(':where(p, li, blockquote, td, th)'));
+ok('[cb-win-fix A] SVG 缩放包 :where() 降特异性 + 展开态 .arrowOpen 保留旋转与缩放',
+  skinSrc.includes(":where(' + c('slot') + ') svg") &&
+  skinSrc.includes("c('arrow') + c('arrowOpen')") &&
+  skinSrc.includes('rotate(90deg) scale(var(--cb-scale, 1))'));
+ok('[cb-win-fix B/G1/G3] 输入卡 [data-composer-card] 跨平台锚点 + letter-spacing: normal + min-height: 52px',
+  skinSrc.includes("[data-composer-card]:not(' + c('cardWorkspaceTrigger') + ')") &&
+  skinSrc.includes('[data-composer-card] { letter-spacing: normal; }') &&
+  skinSrc.includes("min-height: 52px"));
+ok('[cb-win-fix C/D] 新建会话免 topSection 依赖分支 + 底部设置触发器 settingsArea 分支',
+  skinSrc.includes("c('root') + ':not(' + c('collapsed') + ') ' + c('newSession')") &&
+  skinSrc.includes("c('settingsArea') + ' ' + c('trigger') + ':not(' + c('rail')"));
+ok('[Todo #2] 内嵌 Anthropic Sans / Serif / Mono 三款 WOFF2 可变字体（开箱即用，注入 GLOBAL_CSS 与 dist/client.js）',
+  injectedStyleContent.includes("@font-face { font-family: 'Anthropic Sans Web'") &&
+  injectedStyleContent.includes("@font-face { font-family: 'Anthropic Serif Web'") &&
+  injectedStyleContent.includes("@font-face { font-family: 'Anthropic Mono Web'") &&
+  client.includes('data:font/woff2;base64,'));
 
 console.log(fail === 0 ? '\n全部 ' + pass + ' 项通过' : '\n' + fail + ' 项失败');
 process.exit(fail === 0 ? 0 : 1);

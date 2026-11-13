@@ -5,19 +5,19 @@
  *
  * 皮肤方案（D148 Phase 1，浅度定制）：
  * - 全部走官方通道：ctx.theme.overrideTokens token 覆盖层 + 一个 <style data-plugin> 全局微调。
- * - 零 DOM 监听 / TreeWalker / 轮询；token 经 theme-presenter 一次性写入 body，动效性能零负担。
+ * - 零流式轮询 / TreeWalker；token 经 theme-presenter 一次性写入 body，流式渲染 100% 原生。
  * - 配色对标 D143 absoulutely-chuanban：暖白纸 #FBF9F5 / 温暖炭黑 #2C2B29 / 陶土 #D97757 / 牛皮纸侧栏 #F1E8DC。
  * - light/dark 均填暖纸浅色值（固定暖纸外观；语义状态色 / toast / diff 保留官方默认）。
- * - 三层字体（二次调整）：UI 层 Anthropic Sans + 苹方；正文层 Anthropic Serif + 苹方；代码层纯更纱 Slab 等宽。
- *   中文暂时全线回退苹方（质感分析结论：苹方圆润温润贴近 Claude 原生感，更纱冷硬骨感相悖）。
+ * - 三层字体（内嵌 Anthropic Sans/Serif/Mono WOFF2 可变字体，开箱即用）：
+ *   UI 层 Anthropic Sans + 苹方/雅黑；正文层 Anthropic Serif + 苹方/雅黑；代码层更纱 Slab / Anthropic Mono 等宽。
  */
 
 // —— 字体 token（body 内联变量遮蔽 ui-theme base.css 的 :root 定义）——
 // 2026-10-17 二次调整（依 Claude Desktop 字形质感分析结论）：
 //   中文全线暂时回退苹方 PingFang SC（人文黑体、起收笔微圆弧、中宫开阔，温润圆润），
 //   替换首版的更纱中文（工业骨感、平直硬切角，与 Claude 原生感相悖）；
-//   西文维持 Anthropic Sans/Serif（正圆几何字怀 + 板状衬线）。
-//   代码/终端层唯一保留纯更纱 Mono Slab（1:2 中西文等宽硬需求）。
+//   西文维持 Anthropic Sans/Serif（正圆几何字怀 + 板状衬线，已通过 fonts-woff2.js 内嵌 WOFF2 可变字体）。
+//   代码/终端层唯一保留更纱 Mono Slab + 内嵌 Anthropic Mono Web。
 var FONT_UI = "'Anthropic Sans Web', 'Anthropic Sans Web Display Light', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif";
 var FONT_READING = "'Anthropic Serif Web', 'Anthropic Serif Web Display Light', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', Georgia, serif";
 var FONT_CODE = "'Sarasa Mono Slab SC', '等距更纱黑体 Slab SC', 'Anthropic Mono Web', 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', Menlo, Consolas, 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', monospace";
@@ -154,8 +154,9 @@ function c(name) {
   return ':is([class$="_' + name + '"], [class*="_' + name + ' "], [class*="_' + name + '_"])';
 }
 
-// 全局微调（官方 token 面之外的唯一补充，保持极薄）
+// 全局微调（官方 token 面之外的唯一补充，保持极薄；顶部注入内嵌 Anthropic Sans/Serif/Mono WOFF2 @font-face）
 var GLOBAL_CSS = [
+  typeof CB_EMBEDDED_FONT_CSS === 'string' && CB_EMBEDDED_FONT_CSS ? CB_EMBEDDED_FONT_CSS : '',
   '::selection { background: rgba(217, 119, 87, 0.25); }',
   // 微负字距（-0.01em）：西文词组凝聚成致密墨块带，强化「扎实沉稳」质感（对中文影响轻微）
   // 同时在 :root 与 body 声明默认 --cb-scale: 1 作为参数化等比缩放基数
@@ -180,8 +181,16 @@ var GLOBAL_CSS = [
   // 3) 聚焦（光标进入）时暖晕以快速动效（0.18s 官方 ease）大幅增强：
   //    更深边线 + 双层加大加深的暖光外散 + 陶土色 3px 光环。
   // 纯 CSS focus-within，零 JS、零轮询。
-  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger), ' + c('card') + ':not(' + c('cardWorkspaceTrigger') + '):has(textarea) { --dsw-elevation-stroke-color: #A89F8E !important; box-shadow: 0 0 0 0.67px var(--dsw-elevation-stroke-color), 0 2px 10px 0 rgba(96, 76, 55, 0.05), 0 8px 28px 0 rgba(96, 76, 55, 0.06) !important; transition: box-shadow 0.18s var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)) !important; }',
-  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger):focus-within, ' + c('card') + ':not(' + c('cardWorkspaceTrigger') + '):has(textarea):focus-within { box-shadow: 0 0 0 0.67px #978D7A, 0 4px 18px 0 rgba(180, 118, 76, 0.10), 0 12px 44px 0 rgba(180, 118, 76, 0.16), 0 0 0 3px rgba(217, 119, 87, 0.10) !important; }',
+  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger), [data-composer-card]:not(' + c('cardWorkspaceTrigger') + '), ' + c('card') + ':not(' + c('cardWorkspaceTrigger') + '):has(textarea) { --dsw-elevation-stroke-color: #A89F8E !important; box-shadow: 0 0 0 0.67px var(--dsw-elevation-stroke-color), 0 2px 10px 0 rgba(96, 76, 55, 0.05), 0 8px 28px 0 rgba(96, 76, 55, 0.06) !important; transition: box-shadow 0.18s var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)) !important; }',
+  '.JZLxKW_card:not(.JZLxKW_cardWorkspaceTrigger):focus-within, [data-composer-card]:not(' + c('cardWorkspaceTrigger') + '):focus-within, ' + c('card') + ':not(' + c('cardWorkspaceTrigger') + '):has(textarea):focus-within { box-shadow: 0 0 0 0.67px #978D7A, 0 4px 18px 0 rgba(180, 118, 76, 0.10), 0 12px 44px 0 rgba(180, 118, 76, 0.16), 0 0 0 3px rgba(217, 119, 87, 0.10) !important; }',
+  // [cb-win-fix B/G1/G3] 输入卡跨平台锚点与 IME 缓解（2026-11-14 Windows 核查）：
+  // B：0.2.2-rc.3 起编辑器为 Lexical contenteditable，卡内无 <textarea>，:has(textarea) 回退永不命中；
+  //    补 [data-composer-card]（InputBar 卡片专属 data 属性，跨构建稳定）。
+  // G1：输入区解除全局负字距 —— 分数字距参与 IME 预编辑宽度抖动（输入框反复长高缩回）。
+  // G3：docked 输入区 52px 下限对齐 hero（.hero .input 本就 52px）——吸收 1↔2 行翻转
+  //     （docked 36px 下限时 1↔2 行 = 36↔52 跳 16px，是 IME 抖动的主要视觉来源）。
+  '[data-composer-card] { letter-spacing: normal; }',
+  '[data-composer-card] ' + c('input') + ' { min-height: 52px; }',
   // 左右纵横双向等比例同步缩放（方案一：原生参数化 --cb-scale 引擎，跨平台免哈希全兼容）
   // ---------------------------------------------------------------------------
   // 整页布局级缩放不走 CSS zoom（弹层库 rect 视觉坐标与 style.top 布局单位
@@ -194,7 +203,10 @@ var GLOBAL_CSS = [
   '[data-windows-titlebar] .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_logoRow, [data-windows-titlebar] :not(' + c('collapsed') + ') > ' + c('logoRow') + ' { height: calc(40px * var(--cb-scale, 1)) !important; padding-top: 0 !important; padding-bottom: 0 !important; }',
   '.kB3qhq_brandName, ' + c('brandName') + ' { font-size: calc(18px * var(--cb-scale, 1)) !important; line-height: calc(24px * var(--cb-scale, 1)) !important; height: calc(24px * var(--cb-scale, 1)) !important; }',
   '.kB3qhq_fallbackBrandName, ' + c('fallbackBrandName') + ' { font-size: calc(17px * var(--cb-scale, 1)) !important; }',
-  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession, :not(' + c('collapsed') + ') > ' + c('topSection') + ' ' + c('newSession') + ' { height: calc(38px * var(--cb-scale, 1)) !important; padding: calc(8px * var(--cb-scale, 1)) calc(12px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; }',
+  // [cb-win-fix C] 追加免 topSection 依赖分支：Windows 构建（wtg9ga）无 topSection local
+  // （按钮行为 newSessionRow/footArea 命名），原两分支全死；c('root'):not(c('collapsed')) c('newSession')
+  // 与 L237 暖色三态同款写法，实测命中 .wtg9ga_root:not(.wtg9ga_collapsed) .wtg9ga_newSession。
+  '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSession, :not(' + c('collapsed') + ') > ' + c('topSection') + ' ' + c('newSession') + ', ' + c('root') + ':not(' + c('collapsed') + ') ' + c('newSession') + ' { height: calc(38px * var(--cb-scale, 1)) !important; padding: calc(8px * var(--cb-scale, 1)) calc(12px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; }',
   '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelList, :not(' + c('collapsed') + ') > ' + c('panelList') + ' { gap: calc(2px * var(--cb-scale, 1)) !important; margin-bottom: calc(8px * var(--cb-scale, 1)) !important; }',
   '.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelRow, :not(' + c('collapsed') + ') > ' + c('panelList') + ' ' + c('panelRow') + ' { min-height: calc(32px * var(--cb-scale, 1)) !important; padding-block: calc(5px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; }',
   '.kB3qhq_panelUnpin, ' + c('panelUnpin') + ' { top: calc((32px * var(--cb-scale, 1) - 28px) / 2) !important; }',
@@ -207,12 +219,19 @@ var GLOBAL_CSS = [
   '.JoiKIa_projectRow, .JoiKIa_sessionRow, ' + c('projectRow') + ', ' + c('sessionRow') + ', [data-row-key^="workspace:"], [data-row-key^="session:"], [data-sidebar-workspace-header] { height: calc(32px * var(--cb-scale, 1)) !important; min-height: calc(32px * var(--cb-scale, 1)) !important; }',
   '.JoiKIa_title, .JoiKIa_renameInput, .JoiKIa_searchResultTitle, .JoiKIa_hoverTitle, ' + c('projectRow') + ' ' + c('title') + ', ' + c('sessionRow') + ' ' + c('title') + ', [data-row-key^="workspace:"] ' + c('title') + ', [data-row-key^="session:"] ' + c('title') + ', ' + c('renameInput') + ', ' + c('searchResultTitle') + ', ' + c('hoverTitle') + ' { font-size: calc(14px * var(--cb-scale, 1)) !important; line-height: calc(20px * var(--cb-scale, 1)) !important; }',
   '.JoiKIa_slot, ' + c('projectRow') + ' ' + c('slot') + ', ' + c('sessionRow') + ' ' + c('slot') + ', [data-row-key] ' + c('slot') + ' { width: calc(16px * var(--cb-scale, 1)) !important; height: calc(20px * var(--cb-scale, 1)) !important; }',
-  '.JoiKIa_slot svg, .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelGlyph svg, .kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSessionContent > svg, ._77Pn0W_trigger:not(._77Pn0W_rail) svg, ' + c('slot') + ' svg, :not(' + c('collapsed') + ') ' + c('panelGlyph') + ' svg, :not(' + c('collapsed') + ') ' + c('newSessionContent') + ' > svg, ' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + ') svg { transform: scale(var(--cb-scale, 1)); transform-origin: center; }',
+  // [cb-win-fix A] 全项包 :where() 降特异性至 0-0-1：原 c('slot') svg（0-1-1）盖掉官方状态图标
+  // transform（工作区三角 .arrowOpen{transform:rotate(90deg)} 为 0-1-0 → 三角永远不转向，30f6b02 引入回归）；
+  // :where 后官方状态类全面压回，并额外为展开态 .arrowOpen 叠加 scale(var(--cb-scale, 1)) 以同时保留旋转与等比放大。
+  ':where(.JoiKIa_slot) svg, :where(.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelGlyph) svg, :where(.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSessionContent) > svg, :where(._77Pn0W_trigger:not(._77Pn0W_rail)) svg, :where(' + c('slot') + ') svg, :where(:not(' + c('collapsed') + ') ' + c('panelGlyph') + ') svg, :where(:not(' + c('collapsed') + ') ' + c('newSessionContent') + ') > svg, :where(' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + '), ' + c('settingsArea') + ' ' + c('trigger') + ':not(' + c('rail') + ')) svg { transform: scale(var(--cb-scale, 1)); transform-origin: center; }',
+  '.JoiKIa_arrow.JoiKIa_arrowOpen, ' + c('arrow') + c('arrowOpen') + ' { transform: rotate(90deg) scale(var(--cb-scale, 1)); transform-origin: center; }',
   '.JoiKIa_time, ' + c('sessionRow') + ' ' + c('time') + ', [data-row-key^="session:"] ' + c('time') + ' { font-size: calc(10px * var(--cb-scale, 1)) !important; line-height: calc(16px * var(--cb-scale, 1)) !important; }',
   '.JoiKIa_meta, .JoiKIa_searchResultWorkspace, .JoiKIa_searchResultSnippet, .Kjh-qa_sessionOverflowButton, ' + c('projectRow') + ' ' + c('meta') + ', ' + c('searchResultWorkspace') + ', ' + c('searchResultSnippet') + ', ' + c('sessionOverflowButton') + ', [data-row-key^="overflow:"] { font-size: calc(12px * var(--cb-scale, 1)) !important; line-height: calc(18px * var(--cb-scale, 1)) !important; }',
   '.Kjh-qa_sessionOverflowButton, ' + c('sessionOverflowButton') + ', [data-row-key^="overflow:"] { height: calc(28px * var(--cb-scale, 1)) !important; }',
   '.JoiKIa_searchResultRow, ' + c('searchResultRow') + ' { min-height: calc(48px * var(--cb-scale, 1)) !important; padding-block: calc(4px * var(--cb-scale, 1)) !important; }',
-  '._77Pn0W_trigger:not(._77Pn0W_rail), ' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + ') { height: calc(42px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
+  // [cb-win-fix D] 底部设置触发器：Windows 构建侧栏无 bottomSection local（底部区为 footArea >
+  // settingsArea，触发器实为 ui-settings-general 的 AnXs9G_trigger:not(AnXs9G_rail)，官方高度本就 42px）；
+  // 补 c('settingsArea') 祖先分支跨平台命中（wtg9ga_settingsArea 本构建实测存在）。
+  '._77Pn0W_trigger:not(._77Pn0W_rail), ' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + '), ' + c('settingsArea') + ' ' + c('trigger') + ':not(' + c('rail') + ') { height: calc(42px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
   // 右侧主对话区横向内容列宽同步缩放（保留用户手动拖拽 --dsh-chat-user-width 优先级）
   '.kiGsTW_body, [data-conversation-content], ' + c('body') + ':has(> [data-conversation-content]) { --dsh-chat-content-width: var(--dsh-chat-user-width, min(calc(var(--dsh-conversation-column-width, 100vw) - 64px), clamp(calc(680px * var(--cb-scale, 1)), calc(var(--dsh-conversation-column-width, 0px) * 0.64 * var(--cb-scale, 1)), calc(920px * var(--cb-scale, 1))))) !important; }',
 
@@ -251,7 +270,7 @@ var GLOBAL_CSS = [
   '[class*="_control_"] > [class*="_indicator_"], [class*="_tabs_"] > [class*="_indicator_"] { background: #FFFFFF !important; box-shadow: 0 0 0 0.5px #CFC8B8, 0 1px 3px rgba(44, 43, 41, 0.08) !important; }',
   '[class*="_bubble_"]:not([role="tooltip"]) { border: 0.5px solid #E2DACB !important; box-shadow: 0 1px 2px rgba(44, 43, 41, 0.03) !important; }',
 
-  // Phase C：流式状态栏 Claude 橙色系、摆动鲸鱼大幅慢速摇摆与「大片逆向渐隐 + 柔顺下拉」流式引擎
+  // Phase C：流式状态栏 Claude 橙色系与摆动鲸鱼大幅慢速摇摆
   // 1. 流式状态栏橙色加固
   '[data-chat-running], .tnXGgG_running, ' + c('running') + ' { --dsw-alias-label-deep-diving: #CE6846 !important; --dsw-alias-label-deep-diving-shimmer: #F4B293 !important; --dsw-alias-label-shimmer: #F4B293 !important; color: #CE6846 !important; }',
 
@@ -263,12 +282,7 @@ var GLOBAL_CSS = [
   '@keyframes cb-whale-slow-swing { 0%, 100% { transform: translateY(0.3px) rotate(-22deg); } 50% { transform: translateY(-0.5px) rotate(22deg); } }',
   '@media (prefers-reduced-motion: reduce) { .tnXGgG_runningWhaleStill, [data-chat-running] ' + c('runningWhaleStill') + ' { animation: none !important; } }',
 
-  // 3. 流式输出「大片纵向逆向渐隐 + 整块柔顺下浮」视觉引擎（165px 多阶 S 曲线纵向羽化幕布 + 块级柔和下拉浮现）
-  '[data-cb-stream-root] { padding-inline: 2px; margin-inline: -2px; will-change: mask-image, -webkit-mask-image, margin-bottom; -webkit-mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-stream-y-solid, 10000px), rgba(0, 0, 0, 0.86) calc(var(--cb-stream-y-solid, 10000px) * 0.78 + var(--cb-stream-y-end, 10000px) * 0.22), rgba(0, 0, 0, 0.54) calc(var(--cb-stream-y-solid, 10000px) * 0.50 + var(--cb-stream-y-end, 10000px) * 0.50), rgba(0, 0, 0, 0.20) calc(var(--cb-stream-y-solid, 10000px) * 0.22 + var(--cb-stream-y-end, 10000px) * 0.78), transparent var(--cb-stream-y-end, 10000px)); mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-stream-y-solid, 10000px), rgba(0, 0, 0, 0.86) calc(var(--cb-stream-y-solid, 10000px) * 0.78 + var(--cb-stream-y-end, 10000px) * 0.22), rgba(0, 0, 0, 0.54) calc(var(--cb-stream-y-solid, 10000px) * 0.50 + var(--cb-stream-y-end, 10000px) * 0.50), rgba(0, 0, 0, 0.20) calc(var(--cb-stream-y-solid, 10000px) * 0.22 + var(--cb-stream-y-end, 10000px) * 0.78), transparent var(--cb-stream-y-end, 10000px)); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }',
-  '@keyframes cb-stream-sheet-in { 0% { opacity: 0.08; transform: translateY(-7px); } 100% { opacity: 1; transform: translateY(0); } }',
-  '[data-cb-stream-root] > :where(p, ul, ol, pre, h1, h2, h3, h4, h5, h6, blockquote, table, div), [data-cb-stream-root] li { animation: cb-stream-sheet-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }',
-  '@media (prefers-reduced-motion: reduce) { [data-cb-stream-root] > :where(p, ul, ol, pre, h1, h2, h3, h4, h5, h6, blockquote, table, div), [data-cb-stream-root] li { animation: none !important; } }',
-  '[data-cb-stream-tail="horizontal"] { -webkit-mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-tail-upper-h, 0px), transparent var(--cb-tail-upper-h, 0px)), linear-gradient(90deg, #000 0px, #000 var(--cb-stream-x-solid, 2000px), rgba(0, 0, 0, 0.5) calc(var(--cb-stream-x-solid, 2000px) * 0.4 + var(--cb-stream-x-end, 2000px) * 0.6), transparent var(--cb-stream-x-end, 2000px)); mask-image: linear-gradient(180deg, #000 0px, #000 var(--cb-tail-upper-h, 0px), transparent var(--cb-tail-upper-h, 0px)), linear-gradient(90deg, #000 0px, #000 var(--cb-stream-x-solid, 2000px), rgba(0, 0, 0, 0.5) calc(var(--cb-stream-x-solid, 2000px) * 0.4 + var(--cb-stream-x-end, 2000px) * 0.6), transparent var(--cb-stream-x-end, 2000px)); -webkit-mask-size: 100% 100%, 100% var(--cb-tail-line-h, 30px); mask-size: 100% 100%, 100% var(--cb-tail-line-h, 30px); -webkit-mask-position: 0 0, 0 100%; mask-position: 0 0, 0 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }',
+  // 3. 流式渐显引擎：已整体剥离（2026-11-14 决策放弃），无替代实现——流式出字为 DSH 原生行为。
 
   // Phase D：浮现卡片（HoverCard）、上拉/下拉菜单与 Tooltip 渐变出现与消失质感
   // 1. 隐藏 macOS 透明毛玻璃底衬层（避免纯白菜单缩放时边缘露出未缩放底衬）
@@ -304,7 +318,7 @@ var GLOBAL_CSS = [
   '.cb-exit-ghost[data-cb-exit-dir="down"] { transform-origin: center top !important; animation: cb-popup-exit-down 145ms cubic-bezier(0.32, 0, 0.2, 1) both !important; }',
   '.cb-exit-ghost[data-cb-exit-dir="hovercard"] { transform-origin: left center !important; animation: cb-hovercard-exit 145ms cubic-bezier(0.32, 0, 0.2, 1) both !important; }',
   '@media (prefers-reduced-motion: reduce) { [data-menu-material="translucent"], [style*="--dsh-hover-preview-fade"], ._card_l6gf9_9, .mR10tW_panel, .cb-exit-ghost { animation-duration: 0ms !important; } }'
-].join('\n');
+].filter(Boolean).join('\n');
 
 var PLUGIN_ID = 'chuanban-dsh-theme';
 
@@ -477,255 +491,7 @@ function apply(ctx) {
     };
   }, PLUGIN_ID + ': proportional scale sync');
 
-  // 流式输出「大片纵向逆向渐隐 + 60fps 柔顺下拉」引擎（165px 多阶 S 曲线纵向羽化幕布 + 视觉高度阻尼下拉，零 DOM 节点篡改）
-  ctx.effect(function () {
-    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
-
-    var SHEET_DEPTH = 165;      // 纵向逆向渐隐幕布深度（约 6~7 行大片羽化带）
-    var HOLD_FRAMES_MAX = 28;   // 每次流式 token 到来后保持大片渐隐态的帧数（约 460ms）
-
-    var rafId = null;
-    var dirty = false;
-
-    // 当前追踪的流式 Markdown 容器与状态（严格单调递增，禁止回退闪烁）
-    var currentRoot = null;
-    var targetY = 0;            // 真实 DOM 布局高度（getBoundingClientRect().height）
-    var visualH = 0;            // 60fps 柔顺下拉视觉高度（通过负 margin-bottom 阻尼过渡）
-    var ySolid = 0;             // 100% 实色显影前沿（0 .. ySolid 全实色）
-    var yEnd = 36;              // 0% 透明底沿（ySolid .. yEnd 为大片多阶逆向渐隐区）
-    var prevTextLen = 0;
-    var prevH = 0;
-    var activeHoldFrames = 0;
-
-    function cleanupRoot(el) {
-      if (!el) return;
-      try {
-        el.removeAttribute('data-cb-stream-root');
-        el.style.removeProperty('--cb-stream-y-solid');
-        el.style.removeProperty('--cb-stream-y-end');
-        el.style.removeProperty('margin-bottom');
-      } catch (_) {}
-    }
-
-    function resetAll() {
-      if (currentRoot) { cleanupRoot(currentRoot); currentRoot = null; }
-      targetY = 0;
-      visualH = 0;
-      ySolid = 0;
-      yEnd = 36;
-      prevTextLen = 0;
-      prevH = 0;
-      activeHoldFrames = 0;
-    }
-
-    function measureTargets() {
-      dirty = false;
-      var containers = document.querySelectorAll('[data-streaming], [data-variant="think"][data-state="running"]');
-      if (!containers || containers.length === 0) {
-        return false; // 流式标记已移除，交由 tick 完成剩余大片逆向渐隐与柔顺下拉收尾后清理
-      }
-
-      var lastContainer = containers[containers.length - 1];
-      var mdRoots = lastContainer.querySelectorAll('[class*="_markdown_"], [class$="_markdown"]');
-      var mdRoot = mdRoots.length > 0 ? mdRoots[mdRoots.length - 1] : lastContainer;
-      if (!mdRoot || !mdRoot.getBoundingClientRect) return false;
-
-      var rootTextLen = (mdRoot.textContent || '').length;
-      if (rootTextLen === 0) {
-        if (currentRoot && currentRoot !== mdRoot) resetAll();
-        return true;
-      }
-
-      // getBoundingClientRect().height 返回 border-box 高度，不受 margin-bottom 负值补偿影响
-      var rootRect = mdRoot.getBoundingClientRect();
-      var H = Math.max(0, Math.ceil(rootRect.height));
-
-      if (currentRoot !== mdRoot) {
-        if (currentRoot) cleanupRoot(currentRoot);
-        currentRoot = mdRoot;
-        if (H <= 180) {
-          // 新流式消息刚起步：从顶部起开启整片逆向渐隐与柔顺下拉
-          visualH = Math.min(H, 28);
-          ySolid = 0;
-          yEnd = Math.max(32, visualH + 4);
-        } else {
-          // 半途切入已较长的流式消息：在底部 SHEET_DEPTH 区间建立逆向渐隐并平滑下拉
-          visualH = Math.max(0, H - 48);
-          ySolid = Math.max(0, visualH - SHEET_DEPTH);
-          yEnd = visualH + 4;
-        }
-        targetY = H;
-        prevTextLen = rootTextLen;
-        prevH = H;
-        activeHoldFrames = HOLD_FRAMES_MAX;
-        currentRoot.setAttribute('data-cb-stream-root', '');
-        currentRoot.style.setProperty('--cb-stream-y-solid', ySolid.toFixed(1) + 'px');
-        currentRoot.style.setProperty('--cb-stream-y-end', yEnd.toFixed(1) + 'px');
-        var initPull = visualH - targetY;
-        if (initPull < -0.5) {
-          currentRoot.style.setProperty('margin-bottom', initPull.toFixed(1) + 'px');
-        }
-      } else {
-        if (rootTextLen !== prevTextLen || H !== prevH) {
-          activeHoldFrames = HOLD_FRAMES_MAX;
-          prevTextLen = rootTextLen;
-          prevH = H;
-        }
-        targetY = H;
-        // 若因折叠块收起或重排导致真实高度回缩，同步夹逼 visualH 与 ySolid
-        if (H < visualH) {
-          visualH = H;
-        }
-        if (ySolid > H) {
-          ySolid = Math.max(0, H - 24);
-        }
-      }
-
-      return true;
-    }
-
-    function tick() {
-      rafId = null;
-      var streamActive = true;
-      if (dirty) {
-        streamActive = measureTargets();
-      } else if (currentRoot) {
-        var stillRunning = document.querySelector('[data-streaming], [data-variant="think"][data-state="running"]');
-        streamActive = !!stillRunning;
-      }
-
-      if (!currentRoot) return;
-
-      if (activeHoldFrames > 0) {
-        activeHoldFrames--;
-      }
-
-      // 1. 60fps 柔顺下拉（Smooth Pull-Down）：visualH 阻尼追赶真实高度 targetY，
-      //    通过负 margin-bottom 抵消尚未显影的底部高度跳变，使消息外框与滚动区如丝绸般匀速下滑展开
-      var hDiff = targetY - visualH;
-      if (hDiff > 0.4) {
-        var pullStep = Math.max(1.5, hDiff * 0.105);
-        visualH = Math.min(targetY, visualH + pullStep);
-      } else {
-        visualH = targetY;
-      }
-
-      var pullMargin = visualH - targetY;
-      if (pullMargin < -0.4 && streamActive) {
-        currentRoot.style.setProperty('margin-bottom', pullMargin.toFixed(1) + 'px');
-      } else {
-        currentRoot.style.removeProperty('margin-bottom');
-      }
-
-      // 2. 大片纵向逆向渐隐幕布（Large-Sheet Vertical Reverse-Fade）：
-      //    - 流式活跃期：ySolid 保持在 visualH 上方 SHEET_DEPTH（165px，约 6~7 行），
-      //      形成从实色（100%）→ 86% → 54% → 20% → 全透明（0%）的整片纵向逆向渐隐视觉带；
-      //      同时当 visualH < targetY 时 yEnd 严格锁在 visualH + 4px，确保被负 margin-bottom
-      //      折叠的区域 100% 透明，绝不向下穿模叠压状态栏或输入框。
-      //    - 流式停顿或结束收尾期：ySolid 与 yEnd 柔顺向下滑过最后几行，平滑过渡至 100% 实色显影。
-      var isActivelyStreaming = streamActive && (activeHoldFrames > 0 || targetY - visualH > 1);
-      var desiredYSolid;
-      var desiredYEnd;
-
-      if (isActivelyStreaming) {
-        desiredYSolid = Math.max(0, visualH - SHEET_DEPTH);
-        desiredYEnd = (targetY - visualH > 1.2) ? (visualH + 4) : (visualH + 38);
-      } else {
-        desiredYSolid = targetY + 8;
-        desiredYEnd = targetY + 24;
-      }
-
-      if (desiredYSolid > ySolid + 0.3) {
-        var solidRate = isActivelyStreaming ? 0.095 : 0.14;
-        var solidMinStep = isActivelyStreaming ? 1.4 : 2.8;
-        var solidStep = Math.max(solidMinStep, (desiredYSolid - ySolid) * solidRate);
-        ySolid = Math.min(desiredYSolid, ySolid + solidStep);
-      } else if (!isActivelyStreaming && desiredYSolid <= ySolid + 0.3) {
-        ySolid = desiredYSolid;
-      }
-
-      if (targetY - visualH > 1.2) {
-        // 下拉进行中：底沿紧锁 visualH + 4px，与负 margin-bottom 物理边界同步下移
-        yEnd = Math.max(ySolid + 28, visualH + 4);
-      } else {
-        var endDiff = desiredYEnd - yEnd;
-        if (Math.abs(endDiff) > 0.4) {
-          var endStep = endDiff > 0
-            ? Math.max(2.2, endDiff * 0.18)
-            : Math.min(-1.8, endDiff * 0.14);
-          yEnd = yEnd + endStep;
-        } else {
-          yEnd = desiredYEnd;
-        }
-        var minFeather = isActivelyStreaming ? 36 : 12;
-        if (yEnd < ySolid + minFeather) {
-          yEnd = ySolid + minFeather;
-        }
-      }
-
-      currentRoot.style.setProperty('--cb-stream-y-solid', ySolid.toFixed(1) + 'px');
-      currentRoot.style.setProperty('--cb-stream-y-end', yEnd.toFixed(1) + 'px');
-
-      var settled = (Math.abs(targetY - visualH) <= 0.5) && ((targetY + 8) - ySolid <= 0.5);
-      if (!streamActive && settled) {
-        // 流式已结束且大片逆向渐隐尾韵已完全显影：卸载所有遮罩与内联样式，恢复 100% 原生静止渲染
-        resetAll();
-        return;
-      }
-
-      if (streamActive || !settled || dirty) {
-        rafId = requestAnimationFrame(tick);
-      }
-    }
-
-    function scheduleTick() {
-      dirty = true;
-      if (rafId === null) {
-        rafId = requestAnimationFrame(tick);
-      }
-    }
-
-    var observer = new MutationObserver(function (records) {
-      // 非流式空闲期：快速跳过纯输入框（TEXTAREA / INPUT）打字引发的 DOM 变更，避免无谓唤醒 rAF
-      if (!currentRoot && rafId === null && records && records.length > 0) {
-        var onlyInput = true;
-        for (var i = 0; i < records.length; i++) {
-          var t = records[i].target;
-          var el = t && (t.nodeType === 1 ? t : t.parentElement);
-          var tag = el && el.tagName;
-          if (tag !== 'TEXTAREA' && tag !== 'INPUT') {
-            onlyInput = false;
-            break;
-          }
-        }
-        if (onlyInput) return;
-      }
-      scheduleTick();
-    });
-
-    try {
-      if (document.body) {
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-          characterData: true,
-          attributes: true,
-          attributeFilter: ['data-streaming', 'data-state']
-        });
-      }
-    } catch (_) {}
-
-    return function () {
-      if (observer) {
-        try { observer.disconnect(); } catch (_) {}
-      }
-      if (rafId !== null) {
-        try { cancelAnimationFrame(rafId); } catch (_) {}
-        rafId = null;
-      }
-      resetAll();
-    };
-  }, PLUGIN_ID + ': streaming gradient reveal');
+  // （「流式渐显引擎」ctx.effect 已整体剥离（2026-11-14 决策放弃）：不安装任何观察器/动画/遮罩，流式渲染为 DSH 原生行为。）
 
   // 浮现卡片（HoverCard）、上拉/下拉菜单与弹窗卡片离场残影过渡（145ms 极轻量双保险自动销毁）
   ctx.effect(function () {
