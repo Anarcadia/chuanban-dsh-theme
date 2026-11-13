@@ -141,6 +141,19 @@ ok('GLOBAL_CSS 包含右侧正文列宽同步缩放规则（.kiGsTW_body / --dsh
     ok('theme/change (14 -> 16) 更新 --cb-scale = 1.1429 且按比例调整 sidebar=320',
       globalThis.document.body.style.getPropertyValue('--cb-scale') === '1.1429' &&
       setSidebarCalls.length === 1 && setSidebarCalls[0] === 320);
+
+    // 验证夹逼防漂移：先从 16px 切回 14px（自动恢复 280），再模拟宿主 setSidebar(px) 在 12px 时将 240 夹逼为下限 264，随后切回 14px 应精确恢复 280（而非 264*14/12=308）
+    onThemeChange({ fontSizes: { text: 14 } });
+    setSidebarCalls.length = 0;
+    mockStore.actions.setSidebar = (px) => {
+      sidebarWidth = Math.max(264, Math.min(420, px));
+      setSidebarCalls.push(sidebarWidth);
+    };
+    onThemeChange({ fontSizes: { text: 12 } });
+    onThemeChange({ fontSizes: { text: 14 } });
+    ok('防夹逼漂移：14px(280) -> 12px(夹逼264) -> 14px 精确恢复 sidebar=280（零漂移膨胀）',
+      setSidebarCalls.length === 2 && setSidebarCalls[0] === 264 && setSidebarCalls[1] === 280);
+
     for (const d of disposers) d();
     ok('disposer 清理后移除 body 上的 --cb-scale', globalThis.document.body.style.getPropertyValue('--cb-scale') === '');
 
@@ -207,7 +220,7 @@ ok('GLOBAL_CSS 含 [data-expandable] 工具折叠行 hover/active 变色', skinS
 ok('GLOBAL_CSS 含 [class*="_bubble_"]:not([role="tooltip"]) 排除 Tooltip 气泡边线', skinSrc.includes('[class*="_bubble_"]:not([role="tooltip"])'));
 ok('零 setInterval 轮询运行时开销（流式监听采用单个 rAF 节流 MutationObserver）', !skinSrc.includes('setInterval') && skinSrc.includes('requestAnimationFrame'));
 
-console.log('[7] Phase C：流式状态栏 Claude 橙色系、鲸鱼慢速大幅摇摆与流式渐变浮现');
+console.log('[7] Phase C：流式状态栏 Claude 橙色系、鲸鱼慢速大幅摇摆与流式渐变浮现（Antigravity 级双层单调阻尼引擎）');
 ok('--dsw-alias-label-deep-diving = #CE6846', tokens['--dsw-alias-label-deep-diving']?.light === '#CE6846');
 ok('--dsw-alias-label-deep-diving-shimmer = #F4B293', tokens['--dsw-alias-label-deep-diving-shimmer']?.light === '#F4B293');
 ok('--dsw-alias-label-shimmer = rgba(217, 119, 87, 0.42)', tokens['--dsw-alias-label-shimmer']?.light === 'rgba(217, 119, 87, 0.42)');
@@ -217,12 +230,12 @@ ok('GLOBAL_CSS 含鲸鱼矢量大幅慢速摆动（cb-whale-slow-swing 3.2s / 43
   skinSrc.includes('cb-whale-slow-swing') && skinSrc.includes('3.2s') && skinSrc.includes('43% 86%') && skinSrc.includes('rotate(-22deg)'));
 ok('GLOBAL_CSS 含关闭 APNG 动画与解容器裁切规则（display: none / overflow: visible）',
   skinSrc.includes('runningWhaleAnimated') && skinSrc.includes('overflow: visible'));
-ok('GLOBAL_CSS 含流式 CSS @property 与渐变遮罩规则（--cb-reveal-x / --cb-line-alpha / cb-stream-line-emerge）',
-  skinSrc.includes('@property --cb-reveal-x') && skinSrc.includes('@property --cb-line-alpha') && skinSrc.includes('cb-stream-line-emerge'));
-ok('GLOBAL_CSS 含流式双模遮罩属性（data-cb-stream-tail="horizontal" / data-cb-stream-tail="line"）',
-  skinSrc.includes('[data-cb-stream-tail="horizontal"]') && skinSrc.includes('[data-cb-stream-tail="line"]'));
-ok('apply(ctx) 包含流式渐变浮现 effect（streaming gradient reveal + rAF 节流 + createRange 零 DOM 篡改）',
-  skinSrc.includes('streaming gradient reveal') && skinSrc.includes('createRange') && skinSrc.includes('requestAnimationFrame') && skinSrc.includes('MutationObserver'));
+ok('GLOBAL_CSS 含容器级纵向渐变幕布规则（[data-cb-stream-root] / --cb-stream-y-solid / --cb-stream-y-end）',
+  skinSrc.includes('[data-cb-stream-root]') && skinSrc.includes('--cb-stream-y-solid') && skinSrc.includes('--cb-stream-y-end'));
+ok('GLOBAL_CSS 含尾行单调递增横向渐变遮罩（[data-cb-stream-tail="horizontal"] / --cb-stream-x-solid / --cb-stream-x-end）',
+  skinSrc.includes('[data-cb-stream-tail="horizontal"]') && skinSrc.includes('--cb-stream-x-solid') && skinSrc.includes('--cb-stream-x-end'));
+ok('apply(ctx) 包含单调 60fps 阻尼插值流式 effect（streaming gradient reveal + createTreeWalker 规避折叠空矩形 + 零 DOM 篡改）',
+  skinSrc.includes('streaming gradient reveal') && skinSrc.includes('createTreeWalker') && skinSrc.includes('requestAnimationFrame') && skinSrc.includes('MutationObserver'));
 
 console.log('[8] Phase D：浮现卡片与上拉/下拉菜单渐变出现与消失动效');
 ok('GLOBAL_CSS 含透明毛玻璃底衬层中和（[data-menu-backing] opacity: 0）',
@@ -239,6 +252,28 @@ ok('GLOBAL_CSS 包含 .cb-exit-ghost 离场残影容器规则（fixed / pointer-
   skinSrc.includes('.cb-exit-ghost') && skinSrc.includes('position: fixed !important') && skinSrc.includes('pointer-events: none !important'));
 ok('apply(ctx) 包含浮层离场残影 effect（floating card exit transition + WeakMap + sanitizeGhost）',
   skinSrc.includes('floating card exit transition') && skinSrc.includes('FLOAT_SELECTOR') && skinSrc.includes('WeakMap') && skinSrc.includes('sanitizeGhost'));
+ok('P0/P1/P2 对抗审查修复项（排除 aria-modal 模态框 + [data-trigger-menu] + hasActiveCards O(1) 门禁 + 尾块防误挂 + :where 零权重排除）',
+  skinSrc.includes(':not([aria-modal="true"]):not([data-shortcut-modal])') &&
+  skinSrc.includes('[data-trigger-menu]') &&
+  skinSrc.includes('hasActiveCards') &&
+  skinSrc.includes('rootRect.bottom - tailRect.bottom > 20') &&
+  skinSrc.includes(':where(:not('));
+
+console.log('[9] GitHub Issue #1：跨平台 Windows DirectWrite 字体别名、回退栈与免哈希正文规则');
+ok('UI 字体栈包含 Windows DirectWrite 别名 Anthropic Sans Web Display Light 与 Microsoft YaHei UI',
+  tokens['--dsw-font-family'].light.includes('Anthropic Sans Web Display Light') &&
+  tokens['--dsw-font-family'].light.includes('Microsoft YaHei UI'));
+ok('正文阅读层包含 Anthropic Serif Web Display Light、Microsoft YaHei UI 与 Georgia 回退',
+  skinSrc.includes('Anthropic Serif Web Display Light') &&
+  skinSrc.includes('Microsoft YaHei UI') &&
+  skinSrc.includes('Georgia'));
+ok('代码字体栈包含 Anthropic Mono Web 与 Cascadia Mono 回退',
+  tokens['--ds-font-family-code'].light.includes('Anthropic Mono Web') &&
+  tokens['--ds-font-family-code'].light.includes('Cascadia Mono'));
+ok('正文阅读层绑定免哈希稳定类名 [class*="_markdown_"] 并穿透覆盖 --dsw-font-markdown-base',
+  skinSrc.includes('[class*="_markdown_"]') &&
+  skinSrc.includes('--dsw-font-markdown-base:') &&
+  skinSrc.includes(':where(p, li, blockquote, td, th)'));
 
 console.log(fail === 0 ? '\n全部 ' + pass + ' 项通过' : '\n' + fail + ' 项失败');
 process.exit(fail === 0 ? 0 : 1);

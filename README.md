@@ -19,14 +19,18 @@
 
 ## 一键安装
 
-### 1. DSH Desktop 桌面端（最简）
-打开 **设置 → 插件**，在安装输入框直接粘贴以下 URL：
+### 1. DSH Desktop 桌面端（推荐，唯一桌面端安装方式）
+打开 DSH 桌面端 **设置 → 插件**，在安装输入框直接粘贴以下 URL：
 
 ```text
 https://github.com/Anarcadia/chuanban-dsh-theme/releases/latest/download/chuanban-dsh-theme.tgz
 ```
 
-### 2. DSH CLI 命令行
+> **注**：DSH Desktop 的 `desktop` profile 由 Electron 进程独占管理（CLI 下运行 `--profile desktop` 会报错 `profile "desktop" is managed exclusively by the Electron application`），因此桌面端用户请直接通过客户端图形界面「设置 → 插件」安装。
+
+### 2. DSH Web / CLI 服务端（仅适用于 `--profile web`）
+
+如果你运行的是 `dsh web` 网页服务端模式，可通过 CLI 安装到 `web` profile：
 
 ```sh
 dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-theme/releases/latest/download/chuanban-dsh-theme.tgz
@@ -62,12 +66,12 @@ dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-theme/rel
 - **框线与深炭字色压实**：摒弃浅底上容易发虚的半透明 `rgba` 边框，采用 `#E4E0D7 → #C6BFAE` 四阶实色暖灰细线；文字采用 `#2C2B29 → #3F3B33` 深炭梯度，让模型名、权限标识等功能性小字依靠字号而非发灰来区分层级。
 
 ### 2. 三层中西文字体栈与字号跟随
-- **UI 界面层（`--dsw-font-family`）**：`'Anthropic Sans Web', 'PingFang SC', -apple-system, ...` —— 几何感西文搭配温润圆润的苹方中文，微负字距（`-0.01em`）让词组凝聚扎实。
-- **正文阅读层**：`'Anthropic Serif Web', 'PingFang SC', serif` —— 对话正文采用板状衬线西文配苹方中文（若 DSH 未来版本更新内部 CSS Modules 哈希，则无害回落至 UI 字体栈）。
-- **代码与终端层（`--ds-font-family-code`）**：`'Sarasa Mono Slab SC', '等距更纱黑体 Slab SC', 'SF Mono', 'JetBrains Mono', ...` —— 严格 1:2 中西文等宽对齐。
+- **UI 界面层（`--dsw-font-family`）**：`'Anthropic Sans Web', 'Anthropic Sans Web Display Light', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif` —— 同时兼容 macOS CoreText 与 Windows DirectWrite 可变字体族名注册，搭配温润中文回退。
+- **正文阅读层**：`'Anthropic Serif Web', 'Anthropic Serif Web Display Light', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', Georgia, serif` —— 绑定稳定类名 `[class*="_markdown_"]` 与局部 `--dsw-font-markdown-*` 变量，跨版本稳定呈现板状衬线西文配中文阅读体验。
+- **代码与终端层（`--ds-font-family-code`）**：`'Sarasa Mono Slab SC', '等距更纱黑体 Slab SC', 'Anthropic Mono Web', 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', Menlo, Consolas, ...` —— 严格 1:2 中西文等宽对齐。
 - **全局字号与纵横等比例同步缩放（`--cb-scale`）**：将字号缩放比（`text / 14`）映射为 `body` 上的 `--cb-scale`，联动展开态左侧边栏列宽（`layout store` `setSidebar`）与行高/间距/内边距/图标，并同步缩放右侧正文内容区列宽（`--dsh-chat-content-width`）；保留 52px 顶栏红绿灯安全区与 56px 折叠态窄轨不变。
 
-> **字体前提说明**：插件仅声明 CSS 字体栈（不包含字体体积）。为获得最佳排版效果，建议安装上方 **[📦 字体包（Google Drive）](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC?usp=drive_link)**，即 **更纱黑体（`Sarasa Mono Slab SC` / `Sarasa-SuperTTC.ttc`）** 及 **Anthropic Sans / Serif Web** 字体；若未安装，系统将自动平滑回退至 macOS 原生 `PingFang SC`、`SF Mono` 等系统字体，不影响任何配色与布局功能。
+> **字体前提说明**：插件仅声明 CSS 字体栈（不包含字体体积）。为获得最佳排版效果，建议安装上方 **[📦 字体包（Google Drive）](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC?usp=drive_link)**，即 **更纱黑体（`Sarasa Mono Slab SC` / `Sarasa-SuperTTC.ttc`）** 及 **Anthropic Sans / Serif / Mono Web** 字体；若未安装，macOS 将自动回退至原生 `PingFang SC`、`SF Mono`，Windows 将自动回退至 `Microsoft YaHei UI`、`Cascadia Mono` / `Consolas`，不影响任何配色与布局功能。
 
 ---
 
