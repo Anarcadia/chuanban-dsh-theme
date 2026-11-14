@@ -91,9 +91,10 @@ ok('GLOBAL_CSS 包含跨平台通用 CSS Modules 选择器 c(name) 与纵向参�
 ok('GLOBAL_CSS 包含右侧正文列宽同步缩放规则（.kiGsTW_body / [data-conversation-content] / --dsh-chat-content-width）',
   skinSrc.includes('.kiGsTW_body') && skinSrc.includes('[data-conversation-content]') && skinSrc.includes('--dsh-chat-content-width: var(--dsh-chat-user-width'));
 
-// 模拟 apply(ctx) 运行态：验证 --cb-scale 初始化、theme/change 联动与 setSidebar 按比例调用、以及 disposer 清理
+// 模拟 apply(ctx) 运行态：验证 --cb-scale / --cb-btn-scale 初始化、theme/change 联动与 setSidebar 按比例调用、以及 disposer 清理
 let injectedStyleContent = '';
 {
+  const rootProps = new Map();
   const bodyProps = new Map();
   const prevDoc = globalThis.document;
   globalThis.document = {
@@ -105,6 +106,13 @@ let injectedStyleContent = '';
         get textContent() { return injectedStyleContent; },
         remove() {},
       };
+    },
+    documentElement: {
+      style: {
+        setProperty(k, v) { rootProps.set(k, v); },
+        getPropertyValue(k) { return rootProps.get(k) || ''; },
+        removeProperty(k) { rootProps.delete(k); },
+      },
     },
     body: {
       style: {
@@ -147,11 +155,15 @@ let injectedStyleContent = '';
       },
     };
     mod.exports.apply(mockCtx);
-    ok('apply(ctx) 初始字号 14px 时 --cb-scale = 1', globalThis.document.body.style.getPropertyValue('--cb-scale') === '1');
+    ok('apply(ctx) 初始字号 14px 时 --cb-scale = 1 且 --cb-btn-scale = 1',
+      globalThis.document.body.style.getPropertyValue('--cb-scale') === '1' &&
+      globalThis.document.body.style.getPropertyValue('--cb-btn-scale') === '1' &&
+      globalThis.document.documentElement.style.getPropertyValue('--cb-btn-scale') === '1');
     const onThemeChange = listeners.get('theme/change');
     onThemeChange({ fontSizes: { text: 16 } });
-    ok('theme/change (14 -> 16) 更新 --cb-scale = 1.1429 且按比例调整 sidebar=320',
+    ok('theme/change (14 -> 16) 更新 --cb-scale = 1.1429 / --cb-btn-scale = 1.1429 且按比例调整 sidebar=320',
       globalThis.document.body.style.getPropertyValue('--cb-scale') === '1.1429' &&
+      globalThis.document.body.style.getPropertyValue('--cb-btn-scale') === '1.1429' &&
       setSidebarCalls.length === 1 && setSidebarCalls[0] === 320);
 
     // 验证夹逼防漂移：先从 16px 切回 14px（自动恢复 280），再模拟宿主 setSidebar(px) 在 12px 时将 240 夹逼为下限 264，随后切回 14px 应精确恢复 280（而非 264*14/12=308）
@@ -166,8 +178,19 @@ let injectedStyleContent = '';
     ok('防夹逼漂移：14px(280) -> 12px(夹逼264) -> 14px 精确恢复 sidebar=280（零漂移膨胀）',
       setSidebarCalls.length === 2 && setSidebarCalls[0] === 264 && setSidebarCalls[1] === 280);
 
+    // 验证 --cb-btn-scale 上下限夹逼（22px -> 1.36 上限，10px -> 0.85 下限）
+    onThemeChange({ fontSizes: { text: 22 } });
+    const btnScaleMax = globalThis.document.body.style.getPropertyValue('--cb-btn-scale');
+    onThemeChange({ fontSizes: { text: 10 } });
+    const btnScaleMin = globalThis.document.body.style.getPropertyValue('--cb-btn-scale');
+    ok('--cb-btn-scale 夹逼保护：22px 时封顶 1.36，10px 时保底 0.85',
+      btnScaleMax === '1.36' && btnScaleMin === '0.85');
+
     for (const d of disposers) d();
-    ok('disposer 清理后移除 body 上的 --cb-scale', globalThis.document.body.style.getPropertyValue('--cb-scale') === '');
+    ok('disposer 清理后移除 documentElement 与 body 上的 --cb-scale 及 --cb-btn-scale',
+      globalThis.document.body.style.getPropertyValue('--cb-scale') === '' &&
+      globalThis.document.body.style.getPropertyValue('--cb-btn-scale') === '' &&
+      globalThis.document.documentElement.style.getPropertyValue('--cb-btn-scale') === '');
 
     // 回归验证：真实 Cordis Proxy 下未 inject slots 时访问 ctx.slots 会抛错，且 StoredEntry.store 位于顶层
     let sidebar17 = 280;
@@ -299,6 +322,40 @@ ok('[Todo #2] 内嵌 Anthropic Sans / Serif / Mono 三款 WOFF2 可变字体（�
   injectedStyleContent.includes("@font-face { font-family: 'Anthropic Serif Web'") &&
   injectedStyleContent.includes("@font-face { font-family: 'Anthropic Mono Web'") &&
   client.includes('data:font/woff2;base64,'));
+
+console.log('[10] 探索性功能：按钮与弹出菜单字号/几何等比例适量缩放（--cb-btn-scale）与 Sonnet 对抗审查加固');
+ok('GLOBAL_CSS 声明 --cb-btn-scale: clamp(0.85, var(--cb-scale, 1), 1.36) 安全夹逼缩放比',
+  skinSrc.includes('--cb-btn-scale: clamp(0.85, var(--cb-scale, 1), 1.36)'));
+ok('侧栏账户按钮（AccountMenu .hjANda_trigger / .hjANda_avatar）排除 [data-collapsed="true"] 折叠态防拉长',
+  skinSrc.includes('.hjANda_trigger:not([data-collapsed="true"])') &&
+  skinSrc.includes('.hjANda_avatar') &&
+  skinSrc.includes(':not([data-collapsed="true"])'));
+ok('弹出菜单区分标准菜单（34px/13px）、未登录菜单 signedOutMenu（40px/14px）、denseList（30px）与 compactList（24px/11px）并保护 data-match-anchor-width',
+  skinSrc.includes(':not([data-match-anchor-width]):not([data-submenu-layout="page"])') &&
+  skinSrc.includes('.hjANda_signedOutMenu [role="menuitem"]') &&
+  skinSrc.includes('._denseList_70kcw_209') &&
+  skinSrc.includes('._compactList_70kcw_218'));
+ok('输入框底栏胶囊精确限定在 modes / standardControls:not(button) / button_chip 下（保护 @file ReferenceChip 与 VoiceInput 图标按钮），保持非对称内边距与 360px 绝对上限',
+  skinSrc.includes("[data-composer-card] ' + c('modes') + ' ' + c('trigger')") &&
+  skinSrc.includes("[data-composer-card] ' + c('standardControls') + ' ' + c('trigger') + ':not(' + c('button') + ')") &&
+  skinSrc.includes("[data-composer-card] button' + c('chip')") &&
+  skinSrc.includes('padding: 0 calc(4px * var(--cb-btn-scale, 1)) 0 calc(8px * var(--cb-btn-scale, 1)) !important') &&
+  skinSrc.includes('max-width: calc(360px * var(--cb-btn-scale, 1)) !important') &&
+  !skinSrc.includes('min(calc(360px * var(--cb-btn-scale, 1)), 100%)'));
+ok('Hero 欢迎页控件使用真实哈希（._8tPydW_workspace / ._8tPydW_headline / ._8tPydW_previewBadge / .ufIuna_seat）与真实祖先（heroWorkspaceRow / stack）',
+  skinSrc.includes('._8tPydW_workspace') &&
+  skinSrc.includes('._8tPydW_headline') &&
+  skinSrc.includes('._8tPydW_previewBadge') &&
+  skinSrc.includes('.ufIuna_seat') &&
+  skinSrc.includes("c('heroWorkspaceRow')"));
+ok('自定义弹出面板（ModelSelect .htuFrW_menu / ._heading_121p8_19、指令菜单 [data-trigger-menu] 无 max-height 强覆盖）与通用按钮/分段控制器精确限定',
+  skinSrc.includes('.htuFrW_modelName') &&
+  skinSrc.includes('._heading_121p8_19') &&
+  skinSrc.includes("[data-trigger-menu] ' + c('item')") &&
+  !skinSrc.includes('[data-trigger-menu] { max-height') &&
+  skinSrc.includes('--dsh-tab-hit-inline: calc(10px * var(--cb-btn-scale, 1))') &&
+  skinSrc.includes(':is([class$="_36"], [class$="_46"], [class$="_56"], [class$="_68"], [class$="_primary"]') &&
+  skinSrc.includes("c('control') + ':has(> ' + c('indicator') + ') > ' + c('tab')"));
 
 console.log(fail === 0 ? '\n全部 ' + pass + ' 项通过' : '\n' + fail + ' 项失败');
 process.exit(fail === 0 ? 0 : 1);

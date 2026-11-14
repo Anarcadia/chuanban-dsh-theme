@@ -159,8 +159,8 @@ var GLOBAL_CSS = [
   typeof CB_EMBEDDED_FONT_CSS === 'string' && CB_EMBEDDED_FONT_CSS ? CB_EMBEDDED_FONT_CSS : '',
   '::selection { background: rgba(217, 119, 87, 0.25); }',
   // 微负字距（-0.01em）：西文词组凝聚成致密墨块带，强化「扎实沉稳」质感（对中文影响轻微）
-  // 同时在 :root 与 body 声明默认 --cb-scale: 1 作为参数化等比缩放基数
-  ':root, body { --cb-scale: 1; }',
+  // 同时在 :root 与 body 声明默认 --cb-scale: 1 与按钮/弹层安全夹逼缩放比 --cb-btn-scale
+  ':root, body { --cb-scale: 1; --cb-btn-scale: clamp(0.85, var(--cb-scale, 1), 1.36); }',
   'body { -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }',
   // darwin 平台特化层中和：桌面端 CSS 对侧栏列叠了 wash 渐变（#8f89b8 紫灰 /
   // #7a9bf0 蓝，0.2.2 起改由 sidebar-wash-*/sidebar-tint token 驱动，token 已置
@@ -222,18 +222,96 @@ var GLOBAL_CSS = [
   // [cb-win-fix A] 全项包 :where() 降特异性至 0-0-1：原 c('slot') svg（0-1-1）盖掉官方状态图标
   // transform（工作区三角 .arrowOpen{transform:rotate(90deg)} 为 0-1-0 → 三角永远不转向，30f6b02 引入回归）；
   // :where 后官方状态类全面压回，并额外为展开态 .arrowOpen 叠加 scale(var(--cb-scale, 1)) 以同时保留旋转与等比放大。
-  ':where(.JoiKIa_slot) svg, :where(.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelGlyph) svg, :where(.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSessionContent) > svg, :where(._77Pn0W_trigger:not(._77Pn0W_rail)) svg, :where(' + c('slot') + ') svg, :where(:not(' + c('collapsed') + ') ' + c('panelGlyph') + ') svg, :where(:not(' + c('collapsed') + ') ' + c('newSessionContent') + ') > svg, :where(' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + '), ' + c('settingsArea') + ' ' + c('trigger') + ':not(' + c('rail') + ')) svg { transform: scale(var(--cb-scale, 1)); transform-origin: center; }',
+  ':where(.JoiKIa_slot) svg, :where(.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_panelGlyph) svg, :where(.kB3qhq_root:not(.kB3qhq_collapsed) .kB3qhq_newSessionContent) > svg, :where(._77Pn0W_trigger:not(._77Pn0W_rail)) svg, :where(.hjANda_trigger:not([data-collapsed="true"])) svg, :where(' + c('slot') + ') svg, :where(:not(' + c('collapsed') + ') ' + c('panelGlyph') + ') svg, :where(:not(' + c('collapsed') + ') ' + c('newSessionContent') + ') > svg, :where(' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + '):not([data-collapsed="true"]), ' + c('settingsArea') + ' ' + c('trigger') + ':not(' + c('rail') + '):not([data-collapsed="true"])) svg { transform: scale(var(--cb-scale, 1)); transform-origin: center; }',
   '.JoiKIa_arrow.JoiKIa_arrowOpen, ' + c('arrow') + c('arrowOpen') + ' { transform: rotate(90deg) scale(var(--cb-scale, 1)); transform-origin: center; }',
   '.JoiKIa_time, ' + c('sessionRow') + ' ' + c('time') + ', [data-row-key^="session:"] ' + c('time') + ' { font-size: calc(10px * var(--cb-scale, 1)) !important; line-height: calc(16px * var(--cb-scale, 1)) !important; }',
   '.JoiKIa_meta, .JoiKIa_searchResultWorkspace, .JoiKIa_searchResultSnippet, .Kjh-qa_sessionOverflowButton, ' + c('projectRow') + ' ' + c('meta') + ', ' + c('searchResultWorkspace') + ', ' + c('searchResultSnippet') + ', ' + c('sessionOverflowButton') + ', [data-row-key^="overflow:"] { font-size: calc(12px * var(--cb-scale, 1)) !important; line-height: calc(18px * var(--cb-scale, 1)) !important; }',
   '.Kjh-qa_sessionOverflowButton, ' + c('sessionOverflowButton') + ', [data-row-key^="overflow:"] { height: calc(28px * var(--cb-scale, 1)) !important; }',
   '.JoiKIa_searchResultRow, ' + c('searchResultRow') + ' { min-height: calc(48px * var(--cb-scale, 1)) !important; padding-block: calc(4px * var(--cb-scale, 1)) !important; }',
   // [cb-win-fix D] 底部设置触发器：Windows 构建侧栏无 bottomSection local（底部区为 footArea >
-  // settingsArea，触发器实为 ui-settings-general 的 AnXs9G_trigger:not(AnXs9G_rail)，官方高度本就 42px）；
-  // 补 c('settingsArea') 祖先分支跨平台命中（wtg9ga_settingsArea 本构建实测存在）。
-  '._77Pn0W_trigger:not(._77Pn0W_rail), ' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + '), ' + c('settingsArea') + ' ' + c('trigger') + ':not(' + c('rail') + ') { height: calc(42px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
+  // settingsArea，触发器实为 ui-settings-general 的 _77Pn0W_trigger:not(_77Pn0W_rail) 或
+  // ui-settings-account 的 hjANda_trigger:not([data-collapsed="true"])）；
+  // 补 c('settingsArea') 祖先分支并排除 [data-collapsed="true"]（防折叠态 36×36 头像按钮被撑高）。
+  '._77Pn0W_trigger:not(._77Pn0W_rail), .hjANda_trigger:not([data-collapsed="true"]), ' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + '):not([data-collapsed="true"]), ' + c('settingsArea') + ' ' + c('trigger') + ':not(' + c('rail') + '):not([data-collapsed="true"]) { height: calc(42px * var(--cb-scale, 1)) !important; font-size: calc(14px * var(--cb-scale, 1)) !important; line-height: calc(22px * var(--cb-scale, 1)) !important; }',
   // 右侧主对话区横向内容列宽同步缩放（保留用户手动拖拽 --dsh-chat-user-width 优先级）
   '.kiGsTW_body, [data-conversation-content], ' + c('body') + ':has(> [data-conversation-content]) { --dsh-chat-content-width: var(--dsh-chat-user-width, min(calc(var(--dsh-conversation-column-width, 100vw) - 64px), clamp(calc(680px * var(--cb-scale, 1)), calc(var(--dsh-conversation-column-width, 0px) * 0.64 * var(--cb-scale, 1)), calc(920px * var(--cb-scale, 1))))) !important; }',
+
+  // 按钮与弹出菜单字号/几何等比例适量缩放（--cb-btn-scale = clamp(0.85, var(--cb-scale, 1), 1.36)，不破坏界面布局）
+  // ---------------------------------------------------------------------------
+  // 1. 弹出菜单（「设置 / 意见反馈 / 退出登录」账户菜单、会话右键菜单、权限选择菜单）：
+  //    原版硬编码 13px 字号、34px 行高、14px 图标、11px 快捷键（⌘,）与 144..360px 固定菜单宽；
+  //    区分标准菜单（34px/13px）、未登录菜单 signedOutMenu（40px/14px）、紧凑菜单 denseList（30px/13px）与 compactList（24px/11px）。
+  '[role="menu"]:not([data-match-anchor-width]):not([data-submenu-layout="page"]):not(' + c('viewsMoreMenu') + '), ' + c('list') + '[role="menu"]:not([data-match-anchor-width]):not(' + c('viewsMoreMenu') + '), ' + c('submenu') + '[role="menu"]:not([data-submenu-layout="page"]) { min-width: min(calc(144px * var(--cb-btn-scale, 1)), calc(100vw - 24px)) !important; max-width: min(calc(380px * var(--cb-btn-scale, 1)), calc(100vw - 24px)) !important; }',
+  '.hjANda_signedOutMenu[role="menu"], ' + c('signedOutMenu') + '[role="menu"] { min-width: min(calc(124px * var(--cb-btn-scale, 1)), calc(100vw - 24px)) !important; max-width: min(calc(280px * var(--cb-btn-scale, 1)), calc(100vw - 24px)) !important; }',
+  '._compactList_70kcw_218[role="menu"], ' + c('compactList') + '[role="menu"] { min-width: min(calc(156px * var(--cb-btn-scale, 1)), calc(100vw - 24px)) !important; }',
+  '[role="menu"]:not(' + c('compactList') + '):not(' + c('denseList') + '):not(' + c('signedOutMenu') + ') :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], ' + c('item') + ') { min-height: calc(34px * var(--cb-btn-scale, 1)) !important; padding: calc(6px * var(--cb-btn-scale, 1)) calc(8px * var(--cb-btn-scale, 1)) !important; gap: calc(6px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '.hjANda_signedOutMenu [role="menuitem"], ' + c('signedOutMenu') + ' [role="menuitem"] { min-height: calc(40px * var(--cb-btn-scale, 1)) !important; padding: calc(8px * var(--cb-btn-scale, 1)) calc(10px * var(--cb-btn-scale, 1)) !important; gap: calc(8px * var(--cb-btn-scale, 1)) !important; font-size: calc(14px * var(--cb-btn-scale, 1)) !important; line-height: calc(22px * var(--cb-btn-scale, 1)) !important; }',
+  '.hjANda_signedOutMenu [role="menuitem"] > span:first-child:not(:last-child), .hjANda_signedOutMenu [role="menuitem"] > span:first-child:not(:last-child) svg, ' + c('signedOutMenu') + ' [role="menuitem"] > span:first-child:not(:last-child), ' + c('signedOutMenu') + ' [role="menuitem"] > span:first-child:not(:last-child) svg { width: calc(16px * var(--cb-btn-scale, 1)) !important; height: calc(16px * var(--cb-btn-scale, 1)) !important; }',
+  '._denseList_70kcw_209 :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], ' + c('item') + '), ' + c('denseList') + ' :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], ' + c('item') + ') { min-height: calc(30px * var(--cb-btn-scale, 1)) !important; padding: calc(4px * var(--cb-btn-scale, 1)) calc(8px * var(--cb-btn-scale, 1)) !important; gap: calc(6px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '._compactList_70kcw_218 :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], ' + c('item') + '), ' + c('compactList') + ' :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], ' + c('item') + ') { min-height: calc(24px * var(--cb-btn-scale, 1)) !important; padding: calc(2px * var(--cb-btn-scale, 1)) calc(6px * var(--cb-btn-scale, 1)) !important; gap: calc(5px * var(--cb-btn-scale, 1)) !important; font-size: calc(11px * var(--cb-btn-scale, 1)) !important; line-height: calc(17px * var(--cb-btn-scale, 1)) !important; }',
+  '._compactList_70kcw_218 ' + c('itemIcon') + ', ._compactList_70kcw_218 ' + c('itemIcon') + ' svg, ._compactList_70kcw_218 ' + c('check') + ', ' + c('compactList') + ' ' + c('itemIcon') + ', ' + c('compactList') + ' ' + c('itemIcon') + ' svg, ' + c('compactList') + ' ' + c('check') + ' { width: calc(12px * var(--cb-btn-scale, 1)) !important; height: calc(12px * var(--cb-btn-scale, 1)) !important; }',
+  '[role="menu"]:not(' + c('compactList') + '):not(' + c('signedOutMenu') + ') ' + c('itemIcon') + ', [role="menu"]:not(' + c('compactList') + '):not(' + c('signedOutMenu') + ') ' + c('itemIcon') + ' svg, [role="menu"]:not(' + c('compactList') + '):not(' + c('signedOutMenu') + ') ' + c('check') + ', [role="menu"]:not(' + c('compactList') + '):not(' + c('signedOutMenu') + ') ' + c('check') + ' svg { width: calc(14px * var(--cb-btn-scale, 1)) !important; height: calc(14px * var(--cb-btn-scale, 1)) !important; }',
+  '[role="menu"] ' + c('shortcutKeys') + ', [role^="menuitem"] ' + c('shortcutKeys') + ' { font-size: calc(11px * var(--cb-btn-scale, 1)) !important; line-height: calc(16px * var(--cb-btn-scale, 1)) !important; }',
+  '[role="menu"]:not(' + c('compactList') + ') > ' + c('label') + ', [role="menu"]:not(' + c('compactList') + ') ' + c('viewport') + ' > ' + c('label') + ' { font-size: calc(11px * var(--cb-btn-scale, 1)) !important; line-height: calc(15px * var(--cb-btn-scale, 1)) !important; padding: calc(6px * var(--cb-btn-scale, 1)) calc(8px * var(--cb-btn-scale, 1)) !important; }',
+
+  // 2. 输入框底栏胶囊按钮（「完全权限」、模型选择、「计划」、附件 +、发送按钮）与 Hero 欢迎页工作区/预设胶囊：
+  //    - 限定在 modes / standardControls:not(button) / button_chip 下，避免误伤编辑器行内 @file ReferenceChip (span_chip) 与 VoiceInput 纯图标按钮；
+  //    - 保持 .trigger 原生非对称内边距 (0 4px 0 8px) 与 .select 右侧下拉箭头预留内边距 (0 20px 0 8px)；
+  //    - ModelSelect 的 max-width 保持绝对值 calc(360px * var(--cb-btn-scale, 1))，确保 observeControlRow 同步测量不失真。
+  '.SJRB_q_trigger, .htuFrW_trigger, [data-composer-card] ' + c('modes') + ' ' + c('trigger') + ', [data-composer-card] ' + c('standardControls') + ' ' + c('trigger') + ':not(' + c('button') + ') { height: calc(28px * var(--cb-btn-scale, 1)) !important; min-height: calc(28px * var(--cb-btn-scale, 1)) !important; padding: 0 calc(4px * var(--cb-btn-scale, 1)) 0 calc(8px * var(--cb-btn-scale, 1)) !important; gap: calc(4px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '.kKSgSq_chip, [data-composer-card] ' + c('modes') + ' ' + c('chip') + ', [data-composer-card] button' + c('chip') + ' { height: calc(28px * var(--cb-btn-scale, 1)) !important; min-height: calc(28px * var(--cb-btn-scale, 1)) !important; padding: 0 calc(8px * var(--cb-btn-scale, 1)) !important; gap: calc(4px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '.JZLxKW_select, [data-composer-card] select' + c('select') + ' { height: calc(28px * var(--cb-btn-scale, 1)) !important; min-height: calc(28px * var(--cb-btn-scale, 1)) !important; padding: 0 calc(20px * var(--cb-btn-scale, 1)) 0 calc(8px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; max-width: calc(220px * var(--cb-btn-scale, 1)) !important; }',
+  '._8tPydW_workspace, .ufIuna_seat, ' + c('heroWorkspaceRow') + ' ' + c('workspace') + ', ' + c('workspaceRow') + ' ' + c('workspace') + ', ' + c('heroWorkspaceRow') + ' ' + c('seat') + ' { height: calc(28px * var(--cb-btn-scale, 1)) !important; min-height: calc(28px * var(--cb-btn-scale, 1)) !important; padding: 0 calc(8px * var(--cb-btn-scale, 1)) !important; gap: calc(4px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '.SJRB_q_trigger, [data-composer-card] ' + c('modes') + ' ' + c('trigger') + ' { max-width: calc(220px * var(--cb-btn-scale, 1)) !important; }',
+  '.htuFrW_trigger, [data-composer-card] ' + c('standardControls') + ' ' + c('trigger') + ':not(' + c('button') + ') { max-width: calc(360px * var(--cb-btn-scale, 1)) !important; }',
+  '.SJRB_q_triggerIcon svg, .htuFrW_triggerIcon, .kKSgSq_glyph, .kKSgSq_glyph svg, [data-composer-card] ' + c('triggerIcon') + ' svg, [data-composer-card] ' + c('modes') + ' ' + c('glyph') + ', [data-composer-card] ' + c('modes') + ' ' + c('glyph') + ' svg { width: calc(14px * var(--cb-btn-scale, 1)) !important; height: calc(14px * var(--cb-btn-scale, 1)) !important; }',
+  '._8tPydW_folder, .ufIuna_seatIcon, ' + c('heroWorkspaceRow') + ' ' + c('folder') + ', ' + c('workspaceRow') + ' ' + c('folder') + ', ' + c('heroWorkspaceRow') + ' ' + c('seatIcon') + ' { width: calc(16px * var(--cb-btn-scale, 1)) !important; height: calc(16px * var(--cb-btn-scale, 1)) !important; }',
+  '.SJRB_q_chevron, .SJRB_q_chevron svg, .htuFrW_chevron, .htuFrW_chevron svg, .ufIuna_chevron, ._8tPydW_chevron, [data-composer-card] ' + c('chevron') + ', [data-composer-card] ' + c('chevron') + ' svg, ' + c('heroWorkspaceRow') + ' ' + c('chevron') + ', ' + c('workspaceRow') + ' ' + c('chevron') + ' { width: calc(12px * var(--cb-btn-scale, 1)) !important; height: calc(12px * var(--cb-btn-scale, 1)) !important; }',
+  '.JZLxKW_add, [data-composer-card] ' + c('add') + ' { width: calc(28px * var(--cb-btn-scale, 1)) !important; height: calc(28px * var(--cb-btn-scale, 1)) !important; }',
+  '.JZLxKW_add svg, [data-composer-card] ' + c('add') + ' svg { width: calc(14px * var(--cb-btn-scale, 1)) !important; height: calc(14px * var(--cb-btn-scale, 1)) !important; }',
+  '.JZLxKW_primary, [data-composer-card] ' + c('primary') + ' { width: calc(34px * var(--cb-btn-scale, 1)) !important; height: calc(34px * var(--cb-btn-scale, 1)) !important; }',
+  '.JZLxKW_primary svg, [data-composer-card] ' + c('primary') + ' svg { width: calc(16px * var(--cb-btn-scale, 1)) !important; height: calc(16px * var(--cb-btn-scale, 1)) !important; }',
+  '._8tPydW_headline, ' + c('stack') + ' > ' + c('headline') + ' { font-size: calc(26px * var(--cb-btn-scale, 1)) !important; line-height: calc(32px * var(--cb-btn-scale, 1)) !important; }',
+  '._8tPydW_previewBadge, ' + c('headline') + ' ' + c('previewBadge') + ' { font-size: calc(12px * var(--cb-btn-scale, 1)) !important; line-height: calc(18px * var(--cb-btn-scale, 1)) !important; padding: calc(1px * var(--cb-btn-scale, 1)) calc(7px * var(--cb-btn-scale, 1)) 0 !important; }',
+
+  // 3. 自定义弹出面板（模型选择面板 ModelSelect、输入框 / 与 @ 指令菜单 MenuView、Agent 预设列表、PopupSelect）：
+  '.htuFrW_menu, ' + c('menu') + ':has(' + c('modelName') + ', ' + c('cellLabel') + ') { min-width: min(calc(240px * var(--cb-btn-scale, 1)), calc(100vw - 24px)) !important; max-width: min(calc(420px * var(--cb-btn-scale, 1)), calc(100vw - 24px)) !important; }',
+  '.htuFrW_option, ' + c('option') + ':has(' + c('modelName') + ') { min-height: calc(34px * var(--cb-btn-scale, 1)) !important; padding: calc(5px * var(--cb-btn-scale, 1)) calc(7px * var(--cb-btn-scale, 1)) !important; gap: calc(6px * var(--cb-btn-scale, 1)) !important; }',
+  '.htuFrW_modelName, ' + c('modelName') + ' { font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(18px * var(--cb-btn-scale, 1)) !important; }',
+  '.htuFrW_cell, ' + c('cell') + '[role="menuitem"] { height: calc(34px * var(--cb-btn-scale, 1)) !important; padding: 0 calc(8px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '.htuFrW_cellChevron, ' + c('cell') + '[role="menuitem"] ' + c('cellChevron') + ' { width: calc(12px * var(--cb-btn-scale, 1)) !important; height: calc(12px * var(--cb-btn-scale, 1)) !important; }',
+  '._heading_121p8_19, ' + c('group') + ' > ' + c('heading') + ' { font-size: calc(11px * var(--cb-btn-scale, 1)) !important; line-height: calc(16px * var(--cb-btn-scale, 1)) !important; padding: calc(4px * var(--cb-btn-scale, 1)) calc(7px * var(--cb-btn-scale, 1)) calc(2px * var(--cb-btn-scale, 1)) !important; }',
+  '.htuFrW_searchRow input, ' + c('searchRow') + ' input { font-size: calc(12px * var(--cb-btn-scale, 1)) !important; }',
+  '.htuFrW_check, .htuFrW_check svg, ' + c('option') + ' ' + c('check') + ', ' + c('option') + ' ' + c('check') + ' svg { width: calc(14px * var(--cb-btn-scale, 1)) !important; height: calc(14px * var(--cb-btn-scale, 1)) !important; }',
+  '.htuFrW_menu ' + c('row') + ':has(' + c('toggle') + '), ' + c('menu') + ':has(' + c('cellLabel') + ') ' + c('row') + ':has(' + c('toggle') + ') { min-height: calc(34px * var(--cb-btn-scale, 1)) !important; padding: 0 calc(8px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '[data-trigger-menu] ' + c('item') + ' { min-height: calc(34px * var(--cb-btn-scale, 1)) !important; padding: calc(6px * var(--cb-btn-scale, 1)) calc(8px * var(--cb-btn-scale, 1)) !important; gap: calc(6px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '[data-trigger-menu] ' + c('itemAlias') + ', [data-trigger-menu] ' + c('itemDescription') + ' { font-size: calc(12px * var(--cb-btn-scale, 1)) !important; line-height: calc(18px * var(--cb-btn-scale, 1)) !important; }',
+  '[data-trigger-menu] ' + c('sectionTitle') + ', [data-trigger-menu] ' + c('groupTitle') + ', [data-trigger-menu] ' + c('crumb') + ' { font-size: calc(11px * var(--cb-btn-scale, 1)) !important; line-height: calc(16px * var(--cb-btn-scale, 1)) !important; }',
+  '[data-trigger-menu] ' + c('drillHintText') + ', [data-trigger-menu] ' + c('drillHint') + ' { font-size: calc(10px * var(--cb-btn-scale, 1)) !important; line-height: calc(16px * var(--cb-btn-scale, 1)) !important; }',
+  '[data-trigger-menu] ' + c('itemIcon') + ', [data-trigger-menu] ' + c('itemIcon') + ' svg { width: calc(14px * var(--cb-btn-scale, 1)) !important; height: calc(14px * var(--cb-btn-scale, 1)) !important; }',
+  '.m00Doa_row, [data-composer-overlay] ' + c('row') + '[role="option"] { font-size: calc(12px * var(--cb-btn-scale, 1)) !important; padding: calc(5px * var(--cb-btn-scale, 1)) calc(7px * var(--cb-btn-scale, 1)) !important; gap: calc(6px * var(--cb-btn-scale, 1)) !important; }',
+  '.m00Doa_detail, [data-composer-overlay] ' + c('row') + '[role="option"] ' + c('detail') + ' { font-size: calc(11px * var(--cb-btn-scale, 1)) !important; }',
+  '.m00Doa_search, [data-composer-overlay] input' + c('search') + ' { font-size: calc(12px * var(--cb-btn-scale, 1)) !important; padding: calc(5px * var(--cb-btn-scale, 1)) calc(7px * var(--cb-btn-scale, 1)) !important; }',
+  '.ufIuna_itemName, [role="menuitem"] ' + c('item') + ' > ' + c('itemName') + ', [role="menuitemradio"] ' + c('item') + ' > ' + c('itemName') + ' { font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '.ufIuna_itemDesc, [role="menuitem"] ' + c('item') + ' > ' + c('itemDesc') + ', [role="menuitemradio"] ' + c('item') + ' > ' + c('itemDesc') + ' { font-size: calc(12px * var(--cb-btn-scale, 1)) !important; line-height: calc(16px * var(--cb-btn-scale, 1)) !important; }',
+
+  // 4. 侧栏头像、顶栏面包屑/视图标签/工具按钮、以及全局通用 Button / SegmentedControl / SegmentedTabs / Tooltip：
+  //    - 顶栏 .viewTabs .tab 同步更新 --dsh-tab-hit-inline 与 min-height: 35px*scale，确保底部激活下划线 ::after 精确对齐；
+  //    - SegmentedControl 与 SegmentedTabs 通过 :has(> c('indicator')) 精确限定，避免误伤插件设置页下划线 Tab；
+  //    - 通用 Button 仅匹配未传自定义布局类（class 以 variant 结尾）或显式弹窗动作按钮（modalAction/footerAction/dialogButton），
+  //      100% 保护 TaskManager 多行卡片 (.row)、TerminalGuide 全卡遮罩 (.main)、VoiceInput 圆钮 (.roundButton) 与纯图标方钮。
+  '.hjANda_trigger:not([data-collapsed="true"]) .hjANda_avatar, ' + c('bottomSection') + ' ' + c('trigger') + ':not(' + c('rail') + '):not([data-collapsed="true"]) ' + c('avatar') + ', ' + c('settingsArea') + ' ' + c('trigger') + ':not(' + c('rail') + '):not([data-collapsed="true"]) ' + c('avatar') + ' { width: calc(24px * var(--cb-btn-scale, 1)) !important; height: calc(24px * var(--cb-btn-scale, 1)) !important; }',
+  '.kiGsTW_crumb, .kiGsTW_crumbSep, ' + c('crumbs') + ' ' + c('crumb') + ', ' + c('crumbs') + ' ' + c('crumbSep') + ' { font-size: calc(14px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '.kiGsTW_viewTabs .kiGsTW_tab, ' + c('viewTabs') + ' ' + c('tab') + ' { --dsh-tab-hit-inline: calc(10px * var(--cb-btn-scale, 1)) !important; min-height: calc(35px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(16px * var(--cb-btn-scale, 1)) !important; }',
+  '.kiGsTW_tabLabel, ' + c('viewTabs') + ' ' + c('tabLabel') + ' { max-width: calc(88px * var(--cb-btn-scale, 1)) !important; }',
+  c('headerActions') + ' ' + c('trigger') + ', ' + c('headerUtilities') + ' ' + c('trigger') + ' { height: calc(28px * var(--cb-btn-scale, 1)) !important; font-size: calc(12px * var(--cb-btn-scale, 1)) !important; line-height: calc(18px * var(--cb-btn-scale, 1)) !important; }',
+  c('inspectButton') + ' { font-size: calc(11px * var(--cb-btn-scale, 1)) !important; line-height: calc(16px * var(--cb-btn-scale, 1)) !important; }',
+  'button' + c('button') + c('md') + ':is([class$="_36"], [class$="_46"], [class$="_56"], [class$="_68"], [class$="_primary"], [class$="_ghost"], [class$="_outline"], [class$="_toolbar"], ' + c('modalAction') + ', ' + c('footerAction') + ', ' + c('dialogButton') + ') { height: calc(36px * var(--cb-btn-scale, 1)) !important; font-size: calc(14px * var(--cb-btn-scale, 1)) !important; line-height: calc(22px * var(--cb-btn-scale, 1)) !important; }',
+  'button' + c('button') + c('sm') + ':is([class$="_36"], [class$="_46"], [class$="_56"], [class$="_68"], [class$="_primary"], [class$="_ghost"], [class$="_outline"], [class$="_toolbar"]) { height: calc(28px * var(--cb-btn-scale, 1)) !important; font-size: calc(12px * var(--cb-btn-scale, 1)) !important; line-height: calc(18px * var(--cb-btn-scale, 1)) !important; }',
+  '._control_1ocp1_11 > ._tab_1ocp1_37, ' + c('control') + ':has(> ' + c('indicator') + ') > ' + c('tab') + ' { height: calc(28px * var(--cb-btn-scale, 1)) !important; padding-inline: calc(16px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '._tabs_1lga9_1:not([data-size="sm"]) > ._tab_1lga9_1, ' + c('tabs') + ':has(> ' + c('indicator') + '):not([data-size="sm"]) > ' + c('tab') + ' { height: calc(34px * var(--cb-btn-scale, 1)) !important; padding-inline: calc(12px * var(--cb-btn-scale, 1)) !important; font-size: calc(14px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
+  '._tabs_1lga9_1[data-size="sm"] > ._tab_1lga9_1, ' + c('tabs') + ':has(> ' + c('indicator') + ')[data-size="sm"] > ' + c('tab') + ' { height: calc(30px * var(--cb-btn-scale, 1)) !important; padding-inline: calc(12px * var(--cb-btn-scale, 1)) !important; font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(18px * var(--cb-btn-scale, 1)) !important; }',
+  '[role="tooltip"] { font-size: calc(13px * var(--cb-btn-scale, 1)) !important; line-height: calc(20px * var(--cb-btn-scale, 1)) !important; }',
 
   // 实体层次感补齐与交互加固（Stage 1 Hover → Stage 2 Active / Latched-Open 实体状态机）
   // 模块 1：全界面按钮与下拉触发器「双阶变色」状态机（使用 :where() 消除多重 :not() 优先级膨胀）
@@ -354,11 +432,14 @@ function apply(ctx) {
 
     function writeScale(textSize) {
       var scale = Number((textSize / BASE_TEXT_SIZE).toFixed(4));
+      var btnScale = Number(Math.min(1.36, Math.max(0.85, scale)).toFixed(4));
       if (document.documentElement && document.documentElement.style) {
         document.documentElement.style.setProperty('--cb-scale', String(scale));
+        document.documentElement.style.setProperty('--cb-btn-scale', String(btnScale));
       }
       if (document.body && document.body.style) {
         document.body.style.setProperty('--cb-scale', String(scale));
+        document.body.style.setProperty('--cb-btn-scale', String(btnScale));
       }
       return scale;
     }
@@ -484,9 +565,11 @@ function apply(ctx) {
       if (offTheme) { try { offTheme(); } catch (_) {} offTheme = null; }
       if (document.documentElement && document.documentElement.style) {
         document.documentElement.style.removeProperty('--cb-scale');
+        document.documentElement.style.removeProperty('--cb-btn-scale');
       }
       if (document.body && document.body.style) {
         document.body.style.removeProperty('--cb-scale');
+        document.body.style.removeProperty('--cb-btn-scale');
       }
     };
   }, PLUGIN_ID + ': proportional scale sync');
