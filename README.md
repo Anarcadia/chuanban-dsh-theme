@@ -68,7 +68,7 @@ dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-theme/rel
 - **UI 界面层（`--dsw-font-family`）**：`'Anthropic Sans Web', 'Anthropic Sans Web Display Light', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif` —— 内嵌可变无衬线西文，搭配 macOS 苹方 / Windows 雅黑 UI 温润中文回退。
 - **正文阅读层**：`'Anthropic Serif Web', 'Anthropic Serif Web Display Light', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', Georgia, serif` —— 绑定稳定类名 `[class*="_markdown_"]` 与局部 `--dsw-font-markdown-*` 变量，跨版本稳定呈现内嵌板状衬线西文配中文阅读体验。
 - **代码与终端层（`--ds-font-family-code`）**：`'Sarasa Mono Slab SC', '等距更纱黑体 Slab SC', 'Anthropic Mono Web', 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', Menlo, Consolas, ...` —— 内嵌 `Anthropic Mono Web` 兜底，搭配更纱黑体实现严格 1:2 中西文等宽对齐。
-- **全局字号与纵横等比例同步缩放（`--cb-scale`）**：将字号缩放比（`text / 14`）映射为 `body` 上的 `--cb-scale`，通过跨平台通用 CSS Modules 选择器 `c(name)` 与语义属性锚点联动展开态左侧边栏列宽（`layout store` `setSidebar`）与行高/间距/内边距/图标，并同步缩放右侧正文内容区列宽（`--dsh-chat-content-width`）；保留 52px 顶栏红绿灯安全区与 56px 折叠态窄轨不变。
+- **全局字号与纵横等比例同步缩放（`--cb-scale` / `--cb-btn-scale`）**：将字号缩放比（`text / 14`）映射为 `body` 上的 `--cb-scale` 与安全夹逼比 `--cb-btn-scale`，通过跨平台通用 CSS Modules 选择器 `c(name)` 与语义属性锚点联动展开态左侧边栏列宽（`layout store` `setSidebar`）、右侧正文内容区列宽（`--dsh-chat-content-width`）、底部输入框工具栏胶囊（「完全权限」、模型选择器等）以及弹出菜单（「设置 / 意见反馈 / 退出登录」等）；保留 52px 顶栏红绿灯安全区与 56px 折叠态窄轨不变。
 
 ---
 
@@ -83,7 +83,7 @@ dsh plugin --profile web add https://github.com/Anarcadia/chuanban-dsh-theme/rel
 ```sh
 python3 scripts/build-fonts.py   # （仅更新字体时）将 Anthropic 可变 TTF 转为 WOFF2 内嵌模块
 npm run build                    # 打包生成 lazy-CJS 格式的 dist/client.js 与 dist/index.js
-npm test                         # 运行 80 项自动化校验（Bundle 结构 / 80 个 token 形状 / 跨平台规则 / 内嵌 WOFF2 字体）
+npm test                         # 运行 87 项自动化校验（Bundle 结构 / 80 个 token 形状 / 跨平台规则 / 内嵌 WOFF2 字体）
 npm run install-desktop          # 符号链接注册进本机 ~/.dsh/profiles/desktop（供本地开发调试）
 ```
 
@@ -93,6 +93,18 @@ npm run install-desktop          # 符号链接注册进本机 ~/.dsh/profiles/d
 - **卸载插件**：
   - **DSH Desktop**：设置 → 插件 → 找到 `chuanban-dsh-theme` 点击卸载。
   - **DSH CLI**：`dsh plugin --profile web remove chuanban-dsh-theme`
+
+---
+
+## 版本更新记录 (Changelog)
+
+- **`v0.1.2`（2026-11-14）**
+  - **新增按钮与弹出菜单等比例适量缩放（`--cb-btn-scale`）**：跟随外观字号档位同步缩放输入框底栏胶囊（「完全权限」、模型选择器、「计划」、附件 `+`、发送按钮）、欢迎页工作区/预设胶囊、弹出菜单（「设置 / 意见反馈 / 退出登录」、右键菜单、指令菜单）及顶栏视图标签，区分四档菜单密度并保护多行特殊按钮与折叠态窄轨。
+- **`v0.1.1`（2026-11-14）**
+  - **内嵌 Anthropic 三款可变字体（WOFF2 开箱即用）**：内置 `Anthropic Sans / Serif / Mono Web`（`wght 300..800`），免除手动安装西文字体并彻底绕开 Windows DirectWrite `nameID 16` 枚举限制；补齐 Windows 三层中英文回退与跨版本免哈希 Markdown 衬线选择器（关闭 [#1](https://github.com/Anarcadia/chuanban-dsh-theme/issues/1)）。
+  - **跨平台双向等比例缩放与交互质感升级**：适配 DSH `0.2.2-rc.3` 新 token 面（80 个 token），采用跨平台免哈希选择器 `c(name)` 同步支持 macOS 与 Windows 左栏/主区纵横等比缩放，新增按钮双阶实体按压状态机、浮层进退场残影动效与流式大片逆向渐隐效果，修复 Windows 中文 IME 预编辑高度抖动。
+- **`v0.1.0`（2026-10-17）**
+  - **首版发布**：基于 `ctx.theme.overrideTokens` 实现 Claude Desktop 风格暖白纸色系（`#FBF9F5`）、燕麦暖灰侧栏（`#F1EEE7`）、陶土强调色（`#D97757`）、纯白暖光呼吸输入框与三层中西文字体栈。
 
 ## License
 
